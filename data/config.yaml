@@ -1,0 +1,46 @@
+---
+
+knobs:
+    # Note: normally you don't set these... here just to show how to
+    # devel and debug
+    # log_to_console: false
+    # log_level_debug: false
+mqtt:
+    # ip/dns for the mqtt broker
+    host: 192.168.1.250
+globals:
+    # every location will be managed using a unique mqtt topic
+    # unless explicitly specified, this format will be used
+    topic_format: /{}/switch
+    # kasa will monitor the current state of the device every
+    # poll interval, in seconds. You can override on a per device
+    poll_interval: 11
+locations:
+    # coffee maker. To turn it on, use mqtt publish
+    # topic: /coffee_maker/switch payload: on
+    # subscribe to /coffee_maker/switch to know its state
+    coffee_maker:
+        host: 192.168.1.21
+    # toaster is similar to the coffee maker, except it relies on
+    # kasa discovery in order to locate the device via its alias.
+    toaster:
+        alias: toaster
+    # example where topic is explicitly provided for a given device
+    kitchen lights:
+        host: 192.168.1.22
+        topic: /kitchen/light_switch
+    # example where we indicate a specific poll interval
+    pantry:
+        alias: storage
+        poll_interval: 120
+keep_alives:
+    # this is a very optional thing but can be useful. It will monitor a
+    # specific topic to determine if a device should be on or off. The
+    # amount of time it has been since it received something in the subscribe
+    # topic is the trigger for turning the location on/off. A usage example
+    # is available here:    https://github.com/flavio-fernandes/imalive
+    toaster: # the location affected by this keep-alive
+        interval: 10  # how often to send a ping, in seconds
+        timeout: 60   # how long w/out a 'pong' to turn off device
+        publish_topic: /toaster/ping  # set this to '' if a ping is not needed
+        subscribe_topic: /toaster/pong

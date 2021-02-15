@@ -1,0 +1,5 @@
+asyncio-mqtt
+asyncio-throttle
+paho-mqtt
+python-kasa
+pyyaml

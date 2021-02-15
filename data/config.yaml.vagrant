@@ -1,0 +1,16 @@
+---
+
+mqtt:
+    host: 192.168.123.123
+    client_id: mqtttester
+knobs:
+    log_to_console: true
+    log_level_debug: false
+locations:
+    foo:
+        topic: /foo
+        poll_interval: 300
+        host: 192.168.123.10
+    bar:
+        poll_interval: 3600
+        host: 192.168.123.11

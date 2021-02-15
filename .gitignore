@@ -1,0 +1,9 @@
+*.pyc
+*~
+.vagrant
+.DS_Store
+.eggs
+.tox
+.idea
+env
+mqtt2kasa.egg-info

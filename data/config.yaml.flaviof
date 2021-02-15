@@ -1,0 +1,45 @@
+---
+
+knobs:
+    log_to_console: true
+    log_level_debug: false
+mqtt:
+    host: 192.168.10.238
+globals:
+    topic_format: /{}/light_switch
+    poll_interval: 11
+    keep_alive_task_interval: 1
+locations:
+    office:
+        host: 192.168.10.154
+    basement-office:
+        topic: /basementoffice/light_switch
+        host: 192.168.10.140
+        poll_interval: 3
+    basement-stairs:
+        topic: /basementstairs/light_switch
+        host: 192.168.10.121
+    basemen-front:
+        topic: /basementfront/light_switch
+        host: 192.168.10.133
+    basement-back:
+        topic: /basementback/light_switch
+        host: 192.168.10.123
+    master-room:
+        topic: /masterroom/light_switch
+        host: 192.168.10.155
+    iza-room:
+        topic: /izaroom/light_switch
+        host: 192.168.10.129
+    wowclock:
+        host: 192.168.10.151
+        poll_interval: 44
+    attic:
+        host: 192.168.10.118
+        poll_interval: 63
+keep_alives:
+    iza-room:
+        interval: 2
+        timeout: 4
+        publish_topic: /izaroom/ping
+        subscribe_topic: /izaroom/ticks

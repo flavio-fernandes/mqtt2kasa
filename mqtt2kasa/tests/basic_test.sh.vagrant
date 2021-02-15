@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# basic.... very very basic test
+#set -o xtrace
+set -o errexit
+
+MQTT_BROKER='192.168.123.123'
+TMP_OUTPUT=/tmp/basic_test.tmp
+
+get_log_lines () {
+  NUM_LINES=${1:-3}
+  sleep 1.2  ; # give it a sec or 2 to finish...
+  sudo journalctl -u mqtt2kasa.service --no-pager --lines=${NUM_LINES} --output=cat > ${TMP_OUTPUT}
+}
+
+echo TEST: Check the basic message on/off
+mosquitto_pub -h ${MQTT_BROKER} -t /foo -m "off"
+get_log_lines
+grep --quiet -E 'Mqtt event causing device foo to be set as off' ${TMP_OUTPUT} || \
+  { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
+
+mosquitto_pub -h ${MQTT_BROKER} -t /kasa/device/bar -m "on"
+get_log_lines
+grep --quiet -E 'Mqtt event causing device bar to be set as on' ${TMP_OUTPUT} || \
+  { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
+
+echo 'PASSED: Happy happy, joy joy!'
+# rm -f ${TMP_OUTPUT}
+exit 0

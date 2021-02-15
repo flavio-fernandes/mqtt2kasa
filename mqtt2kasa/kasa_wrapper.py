@@ -1,0 +1,158 @@
+#!/usr/bin/env python
+import asyncio
+import random
+from typing import Optional
+
+from asyncio_throttle import Throttler
+from kasa import Discover
+from kasa.smartdevice import SmartDevice, SmartDeviceException
+
+from mqtt2kasa import log
+from mqtt2kasa.config import Cfg
+from mqtt2kasa.events import KasaStateEvent
+
+logger = log.getLogger()
+
+
+class Kasa:
+    _discovered_devices = None
+
+    def __init__(self, name: str, topic: str, config: dict):
+        self.name = name
+        self.topic = topic
+        self.host = config.get("host")
+        self.alias = config.get("alias")
+        self.poll_interval = Cfg().poll_interval(name)
+        self.recv_q = asyncio.Queue(maxsize=4)
+        self.throttler = Throttler(rate_limit=4, period=60)
+        self.curr_state = None
+        self._device = None
+        assert self.host or self.alias
+
+    async def _get_device(self) -> SmartDevice:
+        if not self._device:
+            if self.host:
+                self._device = await Discover.discover_single(self.host)
+                self.alias = self._device.alias
+            else:
+                self.host, self._device = await self._find_by_alias(
+                    self.name, self.alias
+                )
+            logger.info(
+                f"Discovered {self.host} alias:'{self._device.alias}'"
+                f" model:{self._device.model}"
+                f" mac:{self._device.mac}"
+            )
+        return self._device
+
+    @property
+    def started(self):
+        return self._device and isinstance(self.curr_state, bool)
+
+    @classmethod
+    async def _find_by_alias(cls, name, alias, retry=0):
+        if not cls._discovered_devices:
+            cls._discovered_devices = await Discover.discover()
+        try:
+            for addr, device in cls._discovered_devices.items():
+                await device.update()
+                if device.alias == alias:
+                    return addr, device
+        except SmartDeviceException as e:
+            logger.warning(
+                f"Discovering device with alias {alias} did not go well: {e}"
+            )
+
+        if retry < 3:
+            cls._discovered_devices = None
+            return await cls._find_by_alias(name, alias, retry + 1)
+        raise RuntimeError(f"Unable to locate {name} from alias {alias}")
+
+    @property
+    async def is_on(self) -> Optional[bool]:
+        try:
+            device = await self._get_device()
+            await device.update()
+            return device.is_on
+        except SmartDeviceException as e:
+            logger.error(f"{self.host} unable to fetch is_on: {e}")
+        # implicit return None
+
+    async def turn_on(self):
+        async with self.throttler:
+            try:
+                device = await self._get_device()
+                await device.turn_on()
+                self.curr_state = True
+            except SmartDeviceException as e:
+                logger.error(f"{self.host} unable to turn_on: {e}")
+
+    async def turn_off(self):
+        async with self.throttler:
+            try:
+                device = await self._get_device()
+                await device.turn_off()
+                self.curr_state = False
+            except SmartDeviceException as e:
+                logger.error(f"{self.host} unable to turn_off: {e}")
+
+    @staticmethod
+    def state_name(is_on: Optional[bool]) -> str:
+        if is_on is None:
+            return "¯\\_(ツ)_/¯"
+        return "on" if is_on else "off"
+
+    @staticmethod
+    def state_is_on(is_on: str) -> bool:
+        return is_on.lower() in ("on", "yes", "1", "go", "yeah", "yay", "woot")
+
+
+async def handle_kasa_poller(kasa: Kasa, main_events_q: asyncio.Queue):
+    fails = 0
+    while True:
+        # chatty
+        # logger.debug(f"Polling {kasa.name} now. Interval is {kasa.poll_interval} seconds")
+        new_state = await kasa.is_on
+        if kasa.curr_state != new_state or fails:
+            if new_state is None:
+                fails += 1
+                logger.error(f"Polling {kasa.name} ({kasa.host}) failed {fails} times")
+            else:
+                fails = 0
+                await main_events_q.put(
+                    KasaStateEvent(
+                        name=kasa.name, state=new_state, old_state=kasa.curr_state
+                    )
+                )
+                kasa.curr_state = new_state
+        await asyncio.sleep(kasa.poll_interval)
+
+        # In order to avoid all processes sleeping and waking up at the same time,
+        # add a little jitter. Pick a value between 0 and 1.2 seconds
+        jitter = random.randint(99, 1201)
+        jitterSleep = float(jitter) / 1000
+        await asyncio.sleep(jitterSleep)
+
+
+async def handle_kasa_requests(kasa: Kasa):
+    while True:
+        if not kasa.started:
+            logger.debug(f"{kasa.name} waiting to get started by poller")
+            await asyncio.sleep(3)
+            continue
+
+        kasa_state_event = await kasa.recv_q.get()
+        wanted_state = kasa_state_event.state
+        if wanted_state != kasa.curr_state:
+            logger.info(
+                f"{kasa.name} changing state to {kasa.state_name(wanted_state)}"
+            )
+            if wanted_state:
+                await kasa.turn_on()
+            else:
+                await kasa.turn_off()
+        else:
+            logger.debug(
+                f"{kasa.name} state unchanged as {kasa.state_name(wanted_state)}"
+            )
+        kasa.recv_q.task_done()

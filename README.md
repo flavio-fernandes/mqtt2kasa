@@ -85,3 +85,4 @@ recent implementation of [asyncio](https://realpython.com/async-io-python/).
 - Add support for the smart strip, so each 'child' can be controlled independently;
 - Expose throttle config instead of hardcoded values;
 - Improve documentation?!?
+- Use strict yaml (https://hitchdev.com/strictyaml/)

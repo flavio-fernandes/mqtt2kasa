@@ -37,6 +37,9 @@ locations:
     attic:
         host: 192.168.10.118
         poll_interval: 63
+    clapper:
+        host: 192.168.10.223
+        poll_interval: 120
 keep_alives:
     iza-room:
         interval: 2

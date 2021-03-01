@@ -45,6 +45,28 @@ ln -s /vagrant/mqtt2kasa/tests/basic_test.sh.vagrant ~/basic_test.sh
 SCRIPT
 
 $test_mqtt2kasa = <<SCRIPT
+[ -d 'tplink-smarthome-simulator' ] || {
+    pushd ~/
+    sudo apt install -y nodejs npm git
+    git clone https://github.com/flavio-fernandes/tplink-smarthome-simulator.git
+    cd tplink-smarthome-simulator
+    npm install
+    # Add secondary ips to satisfy simulator.js
+    for x in {201..203}; do
+        sudo ip a add 192.168.123.${x}/32 dev eth1
+    done
+    cp -v /vagrant/mqtt2kasa/tests/simulator.js.vagrant ./test/simulator.js
+    sudo cp -v /vagrant/mqtt2kasa/tests/tplink-smarthome-simulator.service.vagrant \
+               /lib/systemd/system/tplink-smarthome-simulator.service
+    sudo systemctl enable --now tplink-smarthome-simulator.service
+    sudo systemctl status --full --no-pager tplink-smarthome-simulator
+
+    # sudo journalctl --unit tplink-smarthome-simulator --since today --follow
+    # sudo journalctl --unit mqtt2kasa --since today --follow
+    popd
+}
+
+# sudo systemctl restart tplink-smarthome-simulator.service
 sudo systemctl status --full --no-pager mqtt2kasa
 sleep 5  ; # give it a few secs for service to start
 ~/basic_test.sh

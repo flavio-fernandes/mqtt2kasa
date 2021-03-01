@@ -1,0 +1,17 @@
+[Unit]
+Description=tplink-smarthome-simulator
+After=network.target
+
+[Service]
+User=vagrant
+Group=vagrant
+Environment=PATH=/usr/bin/
+Environment=DEBUG='*,-device:udp,*:error node test/simulator.js'
+ExecStartPre=/bin/bash -c 'while :; do [ -e /vagrant/mqtt2kasa/bin/mqtt2kasa.service.vagrant ] && break; /bin/sleep 1; done'
+ExecStart=/usr/bin/node test/simulator.js
+WorkingDirectory=/home/vagrant/tplink-smarthome-simulator
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+Alias=tplink-smarthome-simulator.service

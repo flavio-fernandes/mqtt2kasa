@@ -6,11 +6,20 @@ mqtt:
 knobs:
     log_to_console: true
     log_level_debug: false
+globals:
+    # test with slow polls to make log less confusing
+    poll_interval: 3600
+    # topic_format: /kasa/device/{}
 locations:
     foo:
         topic: /foo
-        poll_interval: 300
-        host: 192.168.123.10
+        host: 192.168.123.201
+        alias: Mock HS100 thing1
     bar:
-        poll_interval: 3600
-        host: 192.168.123.11
+        # host: 192.168.123.202
+        alias: Mock HS105 thing2
+    lar:
+        topic: /lar/switch
+        host: 192.168.123.203
+        # alias: Mock HS110 thing3
+

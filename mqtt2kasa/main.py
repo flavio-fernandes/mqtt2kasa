@@ -66,7 +66,16 @@ async def handle_main_event_mqtt(
     if not mqtt_msg.payload:
         logger.debug(f"No payload for topic {mqtt_msg.topic}. Ignoring mqtt event")
         return
-    new_state = kasa.state_is_on(mqtt_msg.payload)
+    try:
+        translated, new_state = kasa.state_parse(mqtt_msg.payload)
+        if translated:
+            await mqtt_send_q.put(
+                MqttMsgEvent(topic=mqtt_msg.topic, payload=translated)
+            )
+            return
+    except ValueError as e:
+        logger.warning(f"Unexpected payload for topic {mqtt_msg.topic}: {e}")
+        return
     try:
         kasa.recv_q.put_nowait(KasaStateEvent(name=name, state=new_state))
     except asyncio.queues.QueueFull:

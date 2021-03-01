@@ -1,0 +1,36 @@
+const { Device } = require('..');
+const { UdpServer } = require('..');
+
+const devices = [];
+
+devices.push(
+  new Device({
+    port: 9999,
+    responseDelay: 100,
+    address: '192.168.123.201',
+    model: 'hs100',
+    data: { alias: 'Mock HS100 thing1', mac: '00:01:01:01:01:01', deviceId: 'thing1' },
+  })
+);
+devices.push(
+  new Device({
+    port: 9999,
+    address: '192.168.123.202',
+    model: 'hs105',
+    data: { alias: 'Mock HS105 thing2', mac: '00:02:02:02:02:02', deviceId: 'thing2' },
+  })
+);
+devices.push(
+  new Device({
+    port: 9999,
+    address: '192.168.123.203',
+    model: 'hs110',
+    data: { alias: 'Mock HS110 thing3', mac: '00:03:03:03:03:03', deviceId: 'thing3' },
+  })
+);
+
+devices.forEach((d) => {
+  d.start();
+});
+
+UdpServer.start();

@@ -15,6 +15,9 @@ logger = log.getLogger()
 
 
 class Kasa:
+    STATE_ON = "on"
+    STATE_OFF = "off"
+
     _discovered_devices = None
 
     def __init__(self, name: str, topic: str, config: dict):
@@ -96,15 +99,55 @@ class Kasa:
             except SmartDeviceException as e:
                 logger.error(f"{self.host} unable to turn_off: {e}")
 
-    @staticmethod
-    def state_name(is_on: Optional[bool]) -> str:
+    @classmethod
+    def state_from_name(cls, is_on: Optional[str]) -> bool:
+        return is_on == cls.STATE_ON
+
+    @classmethod
+    def state_name(cls, is_on: Optional[bool]) -> str:
         if is_on is None:
             return "¯\\_(ツ)_/¯"
-        return "on" if is_on else "off"
+        return cls.STATE_ON if is_on else cls.STATE_OFF
 
     @staticmethod
-    def state_is_on(is_on: str) -> bool:
-        return is_on.lower() in ("on", "yes", "1", "go", "yeah", "yay", "woot")
+    def state_is_toggle(is_toggle: str) -> bool:
+        return is_toggle.lower() in ("toggle", "flip", "other", "change", "reverse")
+
+    @classmethod
+    def state_is_on(cls, is_on: str) -> bool:
+        return is_on.lower() in (
+            cls.STATE_ON,
+            "yes",
+            "1",
+            "go",
+            "yeah",
+            "yay",
+            "woot",
+        )
+
+    @classmethod
+    def state_is_off(cls, is_off: str) -> bool:
+        return is_off.lower() in (
+            cls.STATE_OFF,
+            "no",
+            "0",
+            "stop",
+            "boo",
+            "nay",
+            "nuke",
+        )
+
+    def state_parse(self, payload: str) -> (str, bool):
+        if payload in (self.STATE_ON, self.STATE_OFF):
+            return None, self.state_from_name(payload)
+        if self.state_is_toggle(payload):
+            new_state = False if self.curr_state else True
+            return self.state_name(new_state), new_state
+        if self.state_is_on(payload):
+            return self.STATE_ON, True
+        if self.state_is_off(payload):
+            return self.STATE_OFF, False
+        raise ValueError(f"cannot translate {payload}")
 
 
 async def handle_kasa_poller(kasa: Kasa, main_events_q: asyncio.Queue):

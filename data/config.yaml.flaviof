@@ -40,6 +40,9 @@ locations:
     clapper:
         host: 192.168.10.223
         poll_interval: 120
+    kitchen-clock:
+        host: 192.168.10.239
+        poll_interval: 123
 keep_alives:
     iza-room:
         interval: 2

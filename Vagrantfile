@@ -11,8 +11,8 @@ $bootstrap_ubuntu = <<SCRIPT
 apt update
 apt install -y software-properties-common
 add-apt-repository -y ppa:deadsnakes/ppa
-apt install -y python3.9 python3.9-venv
-ln -sf python3.9 /usr/bin/python3
+apt install -y python3.7 python3.7-venv
+ln -sf python3.7 /usr/bin/python3
 
 SCRIPT
 

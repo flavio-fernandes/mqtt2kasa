@@ -73,7 +73,10 @@ async def handle_main_event_mqtt_ka(
 
 
 async def handle_keep_alives(
-    kasas: dict[str, Kasa], kas: dict[str, KeepAlive], mqtt_send_q: asyncio.Queue
+    # 3.9: kasas: dict[str, Kasa], kas: dict[str, KeepAlive], mqtt_send_q: asyncio.Queue
+    kasas: dict,
+    kas: dict,
+    mqtt_send_q: asyncio.Queue,
 ):
     if not kas:
         logger.info(

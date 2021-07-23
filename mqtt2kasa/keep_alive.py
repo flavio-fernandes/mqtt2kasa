@@ -2,6 +2,7 @@
 import asyncio
 from collections import namedtuple
 from datetime import datetime
+from typing import Dict
 
 from mqtt2kasa import log
 from mqtt2kasa.config import Cfg
@@ -73,10 +74,7 @@ async def handle_main_event_mqtt_ka(
 
 
 async def handle_keep_alives(
-    # 3.9: kasas: dict[str, Kasa], kas: dict[str, KeepAlive], mqtt_send_q: asyncio.Queue
-    kasas: dict,
-    kas: dict,
-    mqtt_send_q: asyncio.Queue,
+    kasas: Dict[str, Kasa], kas: Dict[str, KeepAlive], mqtt_send_q: asyncio.Queue
 ):
     if not kas:
         logger.info(

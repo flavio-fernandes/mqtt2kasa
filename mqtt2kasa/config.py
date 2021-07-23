@@ -34,6 +34,20 @@ class Cfg:
         return const.MQTT_DEFAULT_CLIENT_ID
 
     @property
+    def mqtt_username(self):
+        attr = self._get_info().mqtt
+        if isinstance(attr, collections.abc.Mapping):
+            return attr.get("username", None)
+        return None
+
+    @property
+    def mqtt_password(self):
+        attr = self._get_info().mqtt
+        if isinstance(attr, collections.abc.Mapping):
+            return attr.get("password", None)
+        return None
+
+    @property
     def reconnect_interval(self):
         attr = self._get_info().mqtt
         if isinstance(attr, collections.abc.Mapping):

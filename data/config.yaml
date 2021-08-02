@@ -7,7 +7,7 @@ knobs:
     # log_level_debug: false
 mqtt:
     # ip/dns for the mqtt broker
-    host: 192.168.1.250
+    host: mosquitto
 globals:
     # every location will be managed using a unique mqtt topic
     # unless explicitly specified, this format will be used

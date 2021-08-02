@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import asyncio
+import os
 import collections
 from contextlib import AsyncExitStack
 
@@ -126,10 +127,6 @@ async def main_loop():
     # https://pypi.org/project/asyncio-mqtt/
     logger.debug("Starting main event processing loop")
     cfg = Cfg()
-    mqtt_broker_ip = cfg.mqtt_host
-    mqtt_client_id = cfg.mqtt_client_id
-    mqtt_username = cfg.mqtt_username
-    mqtt_password = cfg.mqtt_password
     mqtt_send_q = asyncio.Queue(maxsize=256)
     main_events_q = asyncio.Queue(maxsize=256)
 
@@ -141,12 +138,7 @@ async def main_loop():
         tasks = set()
         stack.push_async_callback(cancel_tasks, tasks)
 
-        client = Client(
-            mqtt_broker_ip,
-            username=mqtt_username,
-            password=mqtt_password,
-            client_id=mqtt_client_id,
-        )
+        client = Client(os.getenv("MQTT"))
         await stack.enter_async_context(client)
 
         messages = await stack.enter_async_context(client.unfiltered_messages())

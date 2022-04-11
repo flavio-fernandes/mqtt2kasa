@@ -5,6 +5,6 @@ info:
 	echo ${PROJECT}
 
 ci:
-	docker build -t ${TAG} ./server
+	docker build -t ${TAG} .
 	docker push ${TAG}:latest
 	docker image rm ${TAG}:latest

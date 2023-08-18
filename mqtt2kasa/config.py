@@ -48,6 +48,20 @@ class Cfg:
         return None
 
     @property
+    def mqtt_retain(self):
+        attr = self._get_info().mqtt
+        if isinstance(attr, collections.abc.Mapping):
+            return attr.get("retain", False)
+        return False
+
+    @property
+    def mqtt_qos(self):
+        attr = self._get_info().mqtt
+        if isinstance(attr, collections.abc.Mapping):
+            return attr.get("qos", 0)
+        return 0
+
+    @property
     def reconnect_interval(self):
         attr = self._get_info().mqtt
         if isinstance(attr, collections.abc.Mapping):

@@ -8,6 +8,10 @@ knobs:
 mqtt:
     # ip/dns for the mqtt broker
     host: 192.168.1.250
+    # uncomment to publish with retain
+    # retain: true
+    # specify qos value (default is 0)
+    # qos: 1
 globals:
     # every location will be managed using a unique mqtt topic
     # unless explicitly specified, this format will be used

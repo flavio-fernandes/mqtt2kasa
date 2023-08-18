@@ -13,6 +13,8 @@ mqtt:
     host: 192.168.1.250
     username: <optional mqtt username>
     password: <optional mqtt password>
+    # retain: false
+    # qos: 0
 globals:
     # every location will be managed using a unique mqtt topic
     # unless explicitly specified, this format will be used

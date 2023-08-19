@@ -33,10 +33,12 @@ locations:
     kitchen lights:
         host: 192.168.1.22
         topic: /kitchen/light_switch
-    # example where we indicate a specific poll interval
+    # example where we indicate a specific poll interval.
+    # Also, adding a task to publish emeter info at provided interval
     pantry:
         alias: storage
         poll_interval: 120
+        emeter_poll_interval: 600
 keep_alives:
     # this is a very optional thing but can be useful. It will monitor a
     # specific topic to determine if a device should be on or off. The

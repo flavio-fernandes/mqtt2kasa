@@ -3,12 +3,17 @@ import asyncio
 import collections
 from contextlib import AsyncExitStack
 
-from asyncio_mqtt import Client, MqttError
+from aiomqtt import Client, MqttError
 
 from mqtt2kasa import log
 from mqtt2kasa.config import Cfg
-from mqtt2kasa.events import KasaStateEvent, MqttMsgEvent
-from mqtt2kasa.kasa_wrapper import Kasa, handle_kasa_poller, handle_kasa_requests
+from mqtt2kasa.events import KasaStateEvent, KasaEmeterEvent, MqttMsgEvent
+from mqtt2kasa.kasa_wrapper import (
+    Kasa,
+    handle_kasa_poller,
+    handle_kasa_emeter_poller,
+    handle_kasa_requests,
+)
 from mqtt2kasa.keep_alive import (
     KeepAlive,
     handle_keep_alives,
@@ -43,6 +48,24 @@ async def handle_main_event_kasa(
         f" {kasa.topic} as {payload}"
     )
     await mqtt_send_q.put(MqttMsgEvent(topic=kasa.topic, payload=payload))
+
+
+async def handle_emeter_event_kasa(
+    kasa_emeter: KasaEmeterEvent, run_state: RunState, mqtt_send_q: asyncio.Queue
+):
+    kasa = run_state.kasas.get(kasa_emeter.name)
+    if not kasa:
+        logger.warning(
+            f"Unable to find device with name {kasa_emeter.name}. Ignoring kasa emeter event"
+        )
+        return
+    topic = f"{kasa.topic}/emeter"
+    payload = kasa_emeter.emeter_status
+    logger.info(
+        f"Kasa emeter event requesting mqtt for {kasa_emeter.name} to publish"
+        f" {topic} as {payload}"
+    )
+    await mqtt_send_q.put(MqttMsgEvent(topic=topic, payload=payload))
 
 
 async def handle_main_event_mqtt(
@@ -95,6 +118,7 @@ async def handle_main_events(
 ):
     handlers = {
         "KasaStateEvent": handle_main_event_kasa,
+        "KasaEmeterEvent": handle_emeter_event_kasa,
         "MqttMsgEvent": handle_main_event_mqtt,
     }
     while True:
@@ -123,7 +147,8 @@ async def cancel_tasks(tasks):
 async def main_loop():
     global stop_gracefully
 
-    # https://pypi.org/project/asyncio-mqtt/
+    # used to be: https://pypi.org/project/asyncio-mqtt/
+    # https://pypi.org/project/aiomqtt/
     logger.debug("Starting main event processing loop")
     cfg = Cfg()
     mqtt_broker_ip = cfg.mqtt_host
@@ -171,6 +196,10 @@ async def main_loop():
         for kasa in run_state.kasas.values():
             tasks.add(asyncio.create_task(handle_kasa_poller(kasa, main_events_q)))
             tasks.add(asyncio.create_task(handle_kasa_requests(kasa)))
+            if kasa.emeter_poll_interval:
+                tasks.add(
+                    asyncio.create_task(handle_kasa_emeter_poller(kasa, main_events_q))
+                )
 
         for name, config in cfg.keep_alives.items():
             if name not in run_state.kasas:

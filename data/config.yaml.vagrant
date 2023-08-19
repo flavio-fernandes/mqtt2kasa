@@ -9,6 +9,7 @@ knobs:
 globals:
     # test with slow polls to make log less confusing
     poll_interval: 3600
+    # emeter_poll_interval: 0
     # topic_format: /kasa/device/{}
 locations:
     foo:
@@ -18,8 +19,11 @@ locations:
     bar:
         # host: 192.168.123.202
         alias: Mock HS105 thing2
+        # this device does not have emeter capabilities
+        emeter_poll_interval: 888
     lar:
         topic: /lar/switch
         host: 192.168.123.203
         # alias: Mock HS110 thing3
-
+        # this device has emeter capabilities
+        emeter_poll_interval: 888

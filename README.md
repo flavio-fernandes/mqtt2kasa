@@ -22,6 +22,9 @@ globals:
     # kasa will monitor the current state of the device every
     # poll interval, in seconds. You can override on a per device
     poll_interval: 11
+    # if devices support metering (aka emeter), use this poll
+    # interval to publish it. You can override on a per device
+    # emeter_poll_interval: 600
 locations:
     # coffee maker. To turn it on, use mqtt publish
     # topic: /coffee_maker/switch payload: on
@@ -36,10 +39,11 @@ locations:
     kitchen lights:
         host: 192.168.1.22
         topic: /kitchen/light_switch
-    # example where we indicate a specific poll interval
+    # example where we indicate a specific poll intervals
     pantry:
         alias: storage
         poll_interval: 120
+        emeter_poll_interval: 1800
 ```
 
 Devices are connected via **host** or discovered by Kasa via **alias**. There are more attributes
@@ -76,10 +80,16 @@ $ MQTT=192.168.1.250 && \
 2021-01-30T21:43:03-0500 : 0 : /toaster/switch : on
 ```
 
+**NOTE on Metering**: If metering is supported by device and `emeter_poll_interval` was provided, it will be published via topics that end with "emeter":
+
+```
+$ mosquitto_sub -h $MQTT -t '/+/switch/emeter'
+```
+
 In order to damper endless on/off cycles, this implementation sets an 
 [async throttle](https://pypi.org/project/asyncio-throttle/) for each device.
 If there is a need to tweak that, the attributes are located in
-[kasa_wrapper.py](https://github.com/flavio-fernandes/mqtt2kasa/blob/main/mqtt2kasa/kasa_wrapper.py#L26-L27).
+[kasa_wrapper.py](https://github.com/flavio-fernandes/mqtt2kasa/blob/60e37a8e527a04eee54853d42366de314c10cefe/mqtt2kasa/kasa_wrapper.py#L30-L31).
 
 **NOTE:** Use python 3.7 or newer, as this project requires a somewhat
 recent implementation of [asyncio](https://realpython.com/async-io-python/).

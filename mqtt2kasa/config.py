@@ -105,6 +105,18 @@ class Cfg:
             cfg_globals.get("poll_interval") or const.KASA_DEFAULT_POLL_INTERVAL
         )
 
+    def emeter_poll_interval(self, location_name):
+        locations = self._get_info().locations
+        if isinstance(locations, collections.abc.Mapping):
+            location_attributes = locations.get(location_name, {})
+            if location_attributes.get("emeter_poll_interval"):
+                return float(location_attributes["emeter_poll_interval"])
+        cfg_globals = self._get_info().cfg_globals
+        return float(
+            cfg_globals.get("emeter_poll_interval")
+            or const.KASA_DEFAULT_EMETER_POLL_INTERVAL
+        )
+
     @property
     def locations(self):
         return self._get_info().locations

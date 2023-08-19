@@ -4,12 +4,12 @@ import random
 from typing import Optional
 
 from asyncio_throttle import Throttler
-from kasa import Discover
+from kasa import Discover, EmeterStatus
 from kasa.smartdevice import SmartDevice, SmartDeviceException
 
 from mqtt2kasa import log
 from mqtt2kasa.config import Cfg
-from mqtt2kasa.events import KasaStateEvent
+from mqtt2kasa.events import KasaStateEvent, KasaEmeterEvent
 
 logger = log.getLogger()
 
@@ -26,6 +26,7 @@ class Kasa:
         self.host = config.get("host")
         self.alias = config.get("alias")
         self.poll_interval = Cfg().poll_interval(name)
+        self.emeter_poll_interval = Cfg().emeter_poll_interval(name)
         self.recv_q = asyncio.Queue(maxsize=4)
         self.throttler = Throttler(rate_limit=4, period=60)
         self.curr_state = None
@@ -99,6 +100,26 @@ class Kasa:
             except SmartDeviceException as e:
                 logger.error(f"{self.host} unable to turn_off: {e}")
 
+    @property
+    async def has_emeter(self) -> Optional[bool]:
+        try:
+            device = await self._get_device()
+            await device.update()
+            return device.has_emeter
+        except SmartDeviceException as e:
+            logger.error(f"{self.host} unable to get has_emeter: {e}")
+        # implicit return None
+
+    @property
+    async def emeter_realtime(self) -> Optional[EmeterStatus]:
+        try:
+            device = await self._get_device()
+            await device.update()
+            return device.emeter_realtime
+        except SmartDeviceException as e:
+            logger.error(f"{self.host} unable to fetch emeter: {e}")
+        # implicit return None
+
     @classmethod
     def state_from_name(cls, is_on: Optional[str]) -> bool:
         return is_on == cls.STATE_ON
@@ -168,13 +189,40 @@ async def handle_kasa_poller(kasa: Kasa, main_events_q: asyncio.Queue):
                     )
                 )
                 kasa.curr_state = new_state
-        await asyncio.sleep(kasa.poll_interval)
+        await _sleep_with_jitter(kasa.poll_interval)
 
-        # In order to avoid all processes sleeping and waking up at the same time,
-        # add a little jitter. Pick a value between 0 and 1.2 seconds
-        jitter = random.randint(99, 1201)
-        jitterSleep = float(jitter) / 1000
-        await asyncio.sleep(jitterSleep)
+
+async def handle_kasa_emeter_poller(kasa: Kasa, main_events_q: asyncio.Queue):
+    fails = 0
+    while True:
+        # chatty
+        # logger.debug(f"Polling {kasa.name} emeter now. Interval is {kasa.emeter_poll_interval} seconds")
+        if await kasa.has_emeter == False:
+            logger.info(f"{kasa.name} has no emeter. no emeter polling is needed")
+            break
+
+        emeter_status = await kasa.emeter_realtime
+        if emeter_status is None:
+            fails += 1
+            logger.error(
+                f"Polling {kasa.name} emeter ({kasa.host}) failed {fails} times"
+            )
+        else:
+            fails = 0
+            await main_events_q.put(
+                KasaEmeterEvent(name=kasa.name, emeter_status=str(emeter_status))
+            )
+        await _sleep_with_jitter(kasa.emeter_poll_interval)
+
+
+async def _sleep_with_jitter(interval):
+    await asyncio.sleep(interval)
+
+    # In order to avoid all processes sleeping and waking up at the same time,
+    # add a little jitter. Pick a value between 0 and 1.2 seconds
+    jitter = random.randint(99, 1201)
+    jitterSleep = float(jitter) / 1000
+    await asyncio.sleep(jitterSleep)
 
 
 async def handle_kasa_requests(kasa: Kasa):

@@ -12,13 +12,16 @@ def _log_handler_address(files=tuple()):
     try:
         return next(f for f in files if path.exists(f))
     except StopIteration:
-        pass
-    raise Exception("Invalid files: %s" % ", ".join(files))
+        logging.warning(
+            "Invalid files: %s. Using stdout as fallback." % ", ".join(files)
+        )
+        return None
 
 
 def initLogger(testing=False):
     logger = getLogger()
     logger.setLevel(logging.INFO)
+
     format = (
         "%(asctime)s [mqtt2kasa] %(module)12s:%(lineno)-d %(levelname)-8s %(message)s"
     )
@@ -28,9 +31,18 @@ def initLogger(testing=False):
     logHandlerAddress = _log_handler_address(
         ["/run/systemd/journal/syslog", "/var/run/syslog", "/device/log"]
     )
-    syslog = SysLogHandler(address=logHandlerAddress, facility=SysLogHandler.LOG_DAEMON)
-    syslog.setFormatter(formatter)
-    logger.addHandler(syslog)
+
+    if logHandlerAddress:
+        syslog = SysLogHandler(
+            address=logHandlerAddress, facility=SysLogHandler.LOG_DAEMON
+        )
+        syslog.setFormatter(formatter)
+        logger.addHandler(syslog)
+    else:
+        stdout_handler = logging.StreamHandler()
+        stdout_handler.setFormatter(formatter)
+        logger.addHandler(stdout_handler)
+
     if testing:
         log_to_console()
         set_log_level_debug()

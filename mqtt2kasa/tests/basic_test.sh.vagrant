@@ -20,7 +20,7 @@ get_simulator_lines () {
 
 # restart service to trigger discovery
 sudo systemctl restart mqtt2kasa
-sleep 5
+sleep 10
 echo TEST: Check discovery
 get_log_lines 15
 grep --quiet -E 'Discovered 192\.168\.123\.201 .*thing1' ${TMP_OUTPUT} || \

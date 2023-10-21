@@ -2,6 +2,7 @@
 import asyncio
 import collections
 from contextlib import AsyncExitStack
+import re
 
 from aiomqtt import Client, MqttError
 
@@ -66,6 +67,13 @@ async def handle_emeter_event_kasa(
         f" {topic} as {payload}"
     )
     await mqtt_send_q.put(MqttMsgEvent(topic=topic, payload=payload))
+
+    # also publish each value as a topic
+    # https://github.com/flavio-fernandes/mqtt2kasa/issues/10
+    matches = re.findall(r"(\w+)=([^\s>]+)", payload)
+    for key, value in matches:
+        emeter_topic = f"{topic}/{key}"
+        await mqtt_send_q.put(MqttMsgEvent(topic=emeter_topic, payload=value))
 
 
 async def handle_main_event_mqtt(

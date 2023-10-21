@@ -83,7 +83,7 @@ $ MQTT=192.168.1.250 && \
 **NOTE on Metering**: If metering is supported by device and `emeter_poll_interval` was provided, it will be published via topics that end with "emeter":
 
 ```
-$ mosquitto_sub -h $MQTT -t '/+/switch/emeter'
+$ mosquitto_sub -h $MQTT -t '/+/switch/emeter' -t '/+/switch/emeter/#'
 ```
 
 In order to damper endless on/off cycles, this implementation sets an 

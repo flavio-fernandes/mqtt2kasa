@@ -2,12 +2,13 @@
 
 knobs:
     log_to_console: true
-    log_level_debug: false
+    log_level_debug: true
 mqtt:
     host: 192.168.10.238
 globals:
     topic_format: /{}/light_switch
     poll_interval: 11
+    # emeter_poll_interval: 3600
     keep_alive_task_interval: 1
 locations:
     office:
@@ -19,7 +20,7 @@ locations:
     basement-stairs:
         topic: /basementstairs/light_switch
         host: 192.168.10.121
-    basemen-front:
+    basement-front:
         topic: /basementfront/light_switch
         host: 192.168.10.133
     basement-back:
@@ -40,9 +41,10 @@ locations:
     clapper:
         host: 192.168.10.223
         poll_interval: 120
-    kitchen-clock:
-        host: 192.168.10.239
-        poll_interval: 123
+    mosq2-garage:
+        host: 192.168.10.126
+        poll_interval: 660
+        emeter_poll_interval: 3600
 keep_alives:
     iza-room:
         interval: 2

@@ -81,12 +81,6 @@ locations:
         emeter_poll_interval: 60
         topic: kasa/office/desk
 
-    office_desk:
-        host: 192.168.66.201
-        poll_interval: 60
-        emeter_poll_interval: 60
-        topic: kasa/office/strip
-
     kitchen_dishwasher:
         host: 192.168.66.140
         poll_interval: 60

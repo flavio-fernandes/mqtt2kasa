@@ -1,4 +1,24 @@
 CHANGES
 =======
 
+* aiomqtt: peg requirement to 1.x
+* aiomqtt: peg requirement to 1.2.1 or older
+* data/config.yaml.flaviof
+
+v0.0.2
+------
+
+* emeter: publish key and values as topics of emeter (#12)
+* logging: use sdtout as last resort (#11)
+* Add support for publishing emeter information
+
+v0.0.1
+------
+
+* config: add support for qos and retain in mqtt
+* add: kitchen-clock
+* Sync up with https://github.com/clmcavaney/mqtt2kasa
+* Make it python 3.7 compatible
+* Add toggle support and better tests
+* Trivial: New device to flaviof config and strictyaml to TODO
 * first commit

@@ -7,7 +7,10 @@ knobs:
     # log_level_debug: false
 mqtt:
     # ip/dns for the mqtt broker
-    host: 192.168.1.250
+    host: 192.168.44.250
+    username: shelly
+    password: shelly
+    client_id: kasa_hellow
     # uncomment to publish with retain
     # retain: true
     # specify qos value (default is 0)
@@ -23,30 +26,62 @@ locations:
     # coffee maker. To turn it on, use mqtt publish
     # topic: /coffee_maker/switch payload: on
     # subscribe to /coffee_maker/switch to know its state
-    coffee_maker:
-        host: 192.168.1.21
+ #   coffee_maker:
+ #       host: 192.168.1.21
     # toaster is similar to the coffee maker, except it relies on
     # kasa discovery in order to locate the device via its alias.
-    toaster:
-        alias: toaster
+ #   toaster:
+ #       alias: toaster
     # example where topic is explicitly provided for a given device
-    kitchen lights:
-        host: 192.168.1.22
-        topic: /kitchen/light_switch
+ #   kitchen lights:
+ #       host: 192.168.1.22
+ #       topic: /kitchen/light_switch
     # example where we indicate a specific poll interval.
     # Also, adding a task to publish emeter info at provided interval
-    pantry:
-        alias: storage
-        poll_interval: 120
-        emeter_poll_interval: 600
-keep_alives:
+
+    router:
+        host: 192.168.66.60
+        poll_interval: 60
+        emeter_poll_interval: 60
+        topic: kasa/laundry/router
+
+    washing_machine:
+        host: 192.168.66.107
+        poll_interval: 60
+        emeter_poll_interval: 60
+        topic: kasa/laundry/washing_machine
+
+    master_fan:
+        host: 192.168.66.42
+        poll_interval: 60
+        emeter_poll_interval: 60
+        topic: kasa/master/night_fan
+
+    fireplace_pm:
+        host: 192.168.66.176
+        poll_interval: 60
+        emeter_poll_interval: 60
+        topic: kasa/gameroom/fireplace
+
+    garage_fridge:
+        host: 192.168.66.224
+        poll_interval: 60
+        emeter_poll_interval: 60
+        topic: kasa/garage/fridge
+
+    office_strip:
+        host: 192.168.66.201
+        poll_interval: 60
+        emeter_poll_interval: 60
+        topic: kasa/office/strip
+#keep_alives:
     # this is a very optional thing but can be useful. It will monitor a
     # specific topic to determine if a device should be on or off. The
     # amount of time it has been since it received something in the subscribe
     # topic is the trigger for turning the location on/off. A usage example
     # is available here:    https://github.com/flavio-fernandes/imalive
-    toaster: # the location affected by this keep-alive
-        interval: 10  # how often to send a ping, in seconds
-        timeout: 60   # how long w/out a 'pong' to turn off device
-        publish_topic: /toaster/ping  # set this to '' if a ping is not needed
-        subscribe_topic: /toaster/pong
+#    toaster: # the location affected by this keep-alive
+#        interval: 10  # how often to send a ping, in seconds
+#        timeout: 60   # how long w/out a 'pong' to turn off device
+#        publish_topic: /toaster/ping  # set this to '' if a ping is not needed
+#        subscribe_topic: /toaster/pong

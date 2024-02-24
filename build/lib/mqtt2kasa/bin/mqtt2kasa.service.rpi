@@ -1,0 +1,11 @@
+[Unit]
+Description=MQTT front end wrapper to python-kasa
+
+[Service]
+User=pi
+Type=simple
+ExecStart=/home/pi/mqtt2kasa.git/mqtt2kasa/bin/start_mqtt2kasa.sh
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

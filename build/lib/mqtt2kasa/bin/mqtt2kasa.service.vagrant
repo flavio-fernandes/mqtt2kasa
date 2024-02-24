@@ -1,0 +1,11 @@
+[Unit]
+Description=MQTT front end wrapper to python-kasa
+
+[Service]
+User=vagrant
+Type=simple
+ExecStart=/vagrant/mqtt2kasa/bin/start_mqtt2kasa.sh /home/vagrant/mqtt2kasa.config.yaml
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

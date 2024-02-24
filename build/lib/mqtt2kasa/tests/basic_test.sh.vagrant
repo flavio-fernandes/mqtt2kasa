@@ -1,0 +1,83 @@
+#!/bin/bash
+
+#set -o xtrace
+set -o errexit
+
+MQTT_BROKER='192.168.123.123'
+TMP_OUTPUT=/tmp/basic_test.tmp
+
+get_log_lines () {
+  NUM_LINES=${1:-3}
+  sleep 1.2  ; # give it a sec or 2 to finish...
+  sudo journalctl -u mqtt2kasa.service --no-pager --lines=${NUM_LINES} --output=cat > ${TMP_OUTPUT}
+}
+
+get_simulator_lines () {
+  NUM_LINES=${1:-3}
+  sleep 1.2  ; # give it a sec or 2 to finish...
+  sudo journalctl -u tplink-smarthome-simulator.service --no-pager --lines=${NUM_LINES} --output=cat > ${TMP_OUTPUT}
+}
+
+# restart service to trigger discovery
+sudo systemctl restart mqtt2kasa
+sleep 10
+echo TEST: Check discovery
+get_log_lines 15
+grep --quiet -E 'Discovered 192\.168\.123\.201 .*thing1' ${TMP_OUTPUT} || \
+  { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
+grep --quiet -E 'Discovered 192\.168\.123\.202 .*thing2' ${TMP_OUTPUT} || \
+  { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
+grep --quiet -E 'Discovered 192\.168\.123\.203 .* thing3' ${TMP_OUTPUT} || \
+  { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
+
+echo TEST: EMeter
+grep --quiet -E 'bar has no emeter' ${TMP_OUTPUT} || \
+  { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
+grep --quiet -E 'emeter event requesting mqtt for lar to publish /lar/switch/emeter' ${TMP_OUTPUT} || \
+  { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
+
+echo TEST: Check on/off
+mosquitto_pub -h ${MQTT_BROKER} -t /foo -m "ofF"
+get_log_lines
+grep --quiet -E 'Mqtt event causing device foo to be set as off' ${TMP_OUTPUT} || \
+  { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
+
+mosquitto_pub -h ${MQTT_BROKER} -t /kasa/device/bar -m "On"
+get_log_lines
+grep --quiet -E 'Mqtt event causing device bar to be set as on' ${TMP_OUTPUT} || \
+  { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
+
+mosquitto_pub -h ${MQTT_BROKER} -t /lar/switch -m "1"
+get_log_lines
+grep --quiet -E 'Mqtt event causing device lar to be set as on' ${TMP_OUTPUT} || \
+  { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
+
+echo TEST: Check toggle
+mosquitto_pub -h ${MQTT_BROKER} -t /foo -m "toggle"
+get_log_lines
+grep --quiet -E 'Mqtt event causing device foo to be set as on' ${TMP_OUTPUT} || \
+  { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
+get_simulator_lines
+grep --quiet -E 'set_relay_state.*"state": 1' ${TMP_OUTPUT} || \
+  { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
+grep --quiet -E '192\.168\.123\.201' ${TMP_OUTPUT} || \
+  { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
+grep --quiet -E '"err_code":0' ${TMP_OUTPUT} || \
+  { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
+
+mosquitto_pub -h ${MQTT_BROKER} -t /lar/switch -m "flip"
+get_log_lines
+grep --quiet -E 'Mqtt event causing device lar to be set as off' ${TMP_OUTPUT} || \
+  { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
+get_simulator_lines
+grep --quiet -E 'set_relay_state.*"state": 0' ${TMP_OUTPUT} || \
+  { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
+grep --quiet -E '192\.168\.123\.203' ${TMP_OUTPUT} || \
+  { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
+grep --quiet -E '"err_code":0' ${TMP_OUTPUT} || \
+  { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
+
+
+echo 'PASSED: Happy happy, joy joy!'
+rm -f ${TMP_OUTPUT}
+exit 0

@@ -82,7 +82,7 @@ async def handle_emeter_event_kasa(
     await mqtt_send_q.put(MqttMsgEvent(topic=timestamp_topic, payload=epoch_utc_secs))
 
     json_topic = f"{topic}/json_str"
-    jStr = json.dumps(matches)
+    jStr = json.stringify(json.dumps(matches))
     await mqtt_send_q.put(MqttMsgEvent(topic=json_topic, payload=jStr))
 
     

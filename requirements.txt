@@ -1,4 +1,4 @@
-aiomqtt < 2.0
+aiomqtt
 asyncio-throttle
 paho-mqtt
 python-kasa

@@ -3,25 +3,25 @@
 knobs:
     # Note: normally you don't set these... here just to show how to
     # devel and debug
-    # log_to_console: false
-    # log_level_debug: false
+     log_to_console: true
+     log_level_debug: true
 mqtt:
     # ip/dns for the mqtt broker
-    host: 192.168.44.250
+    host: 192.168.33.250
     username: shelly
     password: shelly
-    client_id: kasa_hellow
+    #client_id: kasa_hellow
     # uncomment to publish with retain
-    # retain: true
+    retain: true
     # specify qos value (default is 0)
-    # qos: 1
+    qos: 2
 globals:
     # every location will be managed using a unique mqtt topic
     # unless explicitly specified, this format will be used
     topic_format: /{}/switch
     # kasa will monitor the current state of the device every
     # poll interval, in seconds. You can override on a per device
-    poll_interval: 11
+    poll_interval: 60
 locations:
     # coffee maker. To turn it on, use mqtt publish
     # topic: /coffee_maker/switch payload: on
@@ -39,11 +39,11 @@ locations:
     # example where we indicate a specific poll interval.
     # Also, adding a task to publish emeter info at provided interval
 
-    router:
-        host: 192.168.66.40
-        poll_interval: 60
-        emeter_poll_interval: 60
-        topic: kasa/laundry/router
+    #router:
+    #    host: 192.168.66.40
+    #    poll_interval: 60
+    #    emeter_poll_interval: 60
+    #    topic: kasa/laundry/router
 
     washing_machine:
         host: 192.168.66.107
@@ -75,6 +75,23 @@ locations:
         emeter_poll_interval: 60
         topic: kasa/office/stereo
 
+    office_bathroom:
+        host: 192.168.66.197
+        poll_interval: 60
+        topic: kasa/office/bathroom
+
+    office_closet:
+        host: 192.168.66.15
+        poll_interval: 60
+        emeter_poll_interval: 60
+        topic: kasa/office/closet
+
+    #office_shrine:
+    #    host: 192.168.66.43
+    #    poll_interval: 60
+    #    emeter_poll_interval: 60
+    #    topic: kasa/office/shrine
+
     office_desk:
         host: 192.168.66.234
         poll_interval: 60
@@ -98,7 +115,93 @@ locations:
         poll_interval: 60
         emeter_poll_interval: 60
         topic: kasa/living_room/tv
+        
+    alexa_bathroom_downstairs:
+        host: 192.168.66.38
+        poll_interval: 60
+        emeter_poll_interval: 60
+        topic: kasa/kids/alexa_bathroom_downstairs
+        
+    family_computer:
+        host: 192.168.66.96
+        poll_interval: 60
+        emeter_poll_interval: 60
+        topic: kasa/kitchen/family_computer
 
+    weather_machine:
+        host: 192.168.66.31
+        poll_interval: 60
+        topic: kasa/game_room/weather_machine
+
+    bathroom_downstairs_light:
+        host: 192.168.66.252
+        poll_interval: 60
+        topic: kasa/kids/bathroom_downstairs_light
+
+    connor_fan:
+        host: 192.168.66.35
+        poll_interval: 60
+        topic: kasa/connor/fan_ceiling
+
+    brook_fan:
+        host: 192.168.66.49
+        poll_interval: 60
+        topic: kasa/brook/fan_ceiling
+   
+    game_room_fan:
+        host: 192.168.66.126
+        poll_interval: 60
+        topic: kasa/game_room/fan_ceiling
+    
+    game_room_lights:
+        host: 192.168.66.227
+        poll_interval: 60
+        topic: kasa/game_room/lights_ceiling
+        
+    garage_light:
+        host: 192.168.66.68
+        poll_interval: 60
+        topic: kasa/garage/light
+       
+    living_room_lights:
+        host: 192.168.66.50
+        poll_interval: 60
+        topic: kasa/living_room/lights
+        
+    living_room_fan:
+        host: 192.168.66.150
+        poll_interval: 60
+        topic: kasa/living_room/fan
+ 
+    master_bath_lights:
+        host: 192.168.66.193
+        poll_interval: 60
+        topic: kasa/master_bath/lights
+        
+    master_poop_fan:
+        host: 192.168.66.249
+        poll_interval: 60
+        topic: kasa/master_bath/poop_fan
+ 
+    master_shower_fan:
+        host: 192.168.66.173
+        poll_interval: 60
+        topic: kasa/master_bath/shower_fan
+ 
+    master_master_lights:
+        host: 192.168.66.216
+        poll_interval: 60
+        topic: kasa/master/lights
+          
+    kids_bathroom_upstairs:
+        host: 192.168.66.151
+        poll_interval: 60
+        topic: kasa/kids/bathroom_upstairs_light
+        
+    kitchen_pantry:
+        host: 192.168.66.157
+        poll_interval: 60
+        topic: kasa/kitchen/pantry_light
 
 #keep_alives:
     # this is a very optional thing but can be useful. It will monitor a

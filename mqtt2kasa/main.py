@@ -71,11 +71,14 @@ async def handle_emeter_event_kasa(
     # also publish each value as a topic
     # https://github.com/flavio-fernandes/mqtt2kasa/issues/10
     matches = re.findall(r"(\w+)=([^\s>]+)", payload)
-    utc_time = datetime.now(timezone.utc)
-    matches['timestamp'] =  int(utc_time.timestamp())
     for key, value in matches:
         emeter_topic = f"{topic}/{key}"
         await mqtt_send_q.put(MqttMsgEvent(topic=emeter_topic, payload=value))
+    
+    utc_time = datetime.now(timezone.utc)
+    epoch_utc_secs =  int(utc_time.timestamp())
+    timestamp_topic = f"{topic}/timestamp"
+    await mqtt_send_q.put(MqttMsgEvent(topic=timestamp_topic, payload=epoch_utc_secs))
 
     
 

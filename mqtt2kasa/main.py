@@ -5,7 +5,7 @@ from contextlib import AsyncExitStack
 import re
 
 from aiomqtt import Client, MqttError
-
+from datetime import datetime, timezone
 from mqtt2kasa import log
 from mqtt2kasa.config import Cfg
 from mqtt2kasa.events import KasaStateEvent, KasaEmeterEvent, MqttMsgEvent
@@ -71,9 +71,13 @@ async def handle_emeter_event_kasa(
     # also publish each value as a topic
     # https://github.com/flavio-fernandes/mqtt2kasa/issues/10
     matches = re.findall(r"(\w+)=([^\s>]+)", payload)
+    utc_time = datetime.now(timezone.utc)
+    matches['timestamp'] =  int(utc_time.timestamp())
     for key, value in matches:
         emeter_topic = f"{topic}/{key}"
         await mqtt_send_q.put(MqttMsgEvent(topic=emeter_topic, payload=value))
+
+    
 
 
 async def handle_main_event_mqtt(

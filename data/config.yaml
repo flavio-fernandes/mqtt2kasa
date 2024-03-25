@@ -114,7 +114,7 @@ locations:
         host: 192.168.66.144
         poll_interval: 55
         emeter_poll_interval: 55
-        topic: kasa/living_room/tv
+        topic: kasa/livingroom/tv
         
     alexa_bathroom_downstairs:
         host: 192.168.66.38
@@ -131,7 +131,7 @@ locations:
     weather_machine:
         host: 192.168.66.31
         poll_interval: 55
-        topic: kasa/game_room/weather_machine
+        topic: kasa/gameroom/weather_machine
 
     bathroom_downstairs_light:
         host: 192.168.66.252
@@ -148,47 +148,47 @@ locations:
         poll_interval: 55
         topic: kasa/brook/fan_ceiling
    
-    game_room_fan:
+    gameroom_fan:
         host: 192.168.66.126
         poll_interval: 55
-        topic: kasa/game_room/fan_ceiling
+        topic: kasa/gameroom/fan_ceiling
     
-    game_room_lights:
+    gameroom_lights:
         host: 192.168.66.227
         poll_interval: 55
-        topic: kasa/game_room/lights_ceiling
+        topic: kasa/gameroom/lights_ceiling
         
     garage_light:
         host: 192.168.66.68
         poll_interval: 55
         topic: kasa/garage/light
        
-    living_room_lights:
+    livingroom_lights:
         host: 192.168.66.50
         poll_interval: 55
-        topic: kasa/living_room/lights
+        topic: kasa/livingroom/lights
         
-    living_room_fan:
+    livingroom_fan:
         host: 192.168.66.150
         poll_interval: 55
-        topic: kasa/living_room/fan
+        topic: kasa/livingroom/fan
  
     master_bath_lights:
         host: 192.168.66.193
         poll_interval: 55
-        topic: kasa/master_bath/lights
+        topic: kasa/master/bath_lights
         
     master_poop_fan:
         host: 192.168.66.249
         poll_interval: 55
-        topic: kasa/master_bath/poop_fan
+        topic: kasa/master/bath_poop_fan
  
     master_shower_fan:
         host: 192.168.66.173
         poll_interval: 55
-        topic: kasa/master_bath/shower_fan
+        topic: kasa/master/bath_shower_fan
  
-    master_master_lights:
+    master_lights:
         host: 192.168.66.216
         poll_interval: 55
         topic: kasa/master/lights

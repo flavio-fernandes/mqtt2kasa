@@ -50,6 +50,15 @@ async def handle_main_event_kasa(
     )
     await mqtt_send_q.put(MqttMsgEvent(topic=kasa.topic, payload=payload))
 
+    utc_time = datetime.now(timezone.utc)
+    epoch_utc_secs =  int(utc_time.timestamp())
+    json_topic = f"{kasa.topic}/status_json"
+    s = {}
+    s["timestamp"] = epoch_utc_secs
+    s["state"] = kasa.state_name(kasa_state.state)
+    jStr = json.dumps(s)
+    await mqtt_send_q.put(MqttMsgEvent(topic=json_topic, payload=jStr))
+
 
 async def handle_emeter_event_kasa(
     kasa_emeter: KasaEmeterEvent, run_state: RunState, mqtt_send_q: asyncio.Queue

@@ -39,6 +39,16 @@ locations:
     # example where we indicate a specific poll interval.
     # Also, adding a task to publish emeter info at provided interval
 
+
+
+
+    router:
+        #host: 192.168.66.176
+        host: 192.168.66.43
+        poll_interval: 55
+        emeter_poll_interval: 55
+        topic: kasa/laundry/router_rack
+
     #router:
     #    host: 192.168.66.40
     #    poll_interval: 55
@@ -57,11 +67,11 @@ locations:
         emeter_poll_interval: 55
         topic: kasa/master/night_fan
 
-    fireplace_pm:
-        host: 192.168.66.176
-        poll_interval: 55
-        emeter_poll_interval: 55
-        topic: kasa/gameroom/fireplace
+    #fireplace_pm:
+    #    host: 192.168.66.176
+    #    poll_interval: 55
+    #    emeter_poll_interval: 55
+    #    topic: kasa/gameroom/fireplace
 
     garage_fridge:
         host: 192.168.66.224
@@ -86,20 +96,27 @@ locations:
         emeter_poll_interval: 55
         topic: kasa/office/closet
 
-    #office_shrine:
-    #    host: 192.168.66.43
-    #    poll_interval: 55
-    #    emeter_poll_interval: 55
-    #    topic: kasa/office/shrine
+    office_shrine:
+        host: 192.168.66.176
+        poll_interval: 55
+        emeter_poll_interval: 55
+        topic: kasa/office/shrine
 
     office_desk:
         host: 192.168.66.234
         poll_interval: 55
         emeter_poll_interval: 55
         topic: kasa/office/desk
+    
+    #v2 needs authentication
+    #gameroom_console:
+    #    host: 192.168.66.140
+    #    poll_interval: 55
+    #    emeter_poll_interval: 55
+    #    topic: kasa/gameroom/console
 
     kitchen_dishwasher:
-        host: 192.168.66.140
+        host: 192.168.66.234
         poll_interval: 55
         emeter_poll_interval: 55
         topic: kasa/kitchen/dishwasher

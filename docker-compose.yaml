@@ -1,0 +1,10 @@
+services:
+  mqtt2kasa:
+    # uncomment to build using local Dockerfile
+    # build: 
+      # context: .
+      # dockerfile: Dockerfile
+    image: flavio-fernandes/mqtt2kasa
+    restart: unless-stopped
+    volumes:
+      - ./data:/data

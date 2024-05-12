@@ -27,3 +27,10 @@ locations:
         # alias: Mock HS110 thing3
         # this device has emeter capabilities
         emeter_poll_interval: 888
+    dimmer:
+        topic: /dimmer
+        host: 192.168.123.204
+        # alias: Mock HS220 thing4
+        # brightness can be changed on this device
+        emeter_poll_interval: 888
+

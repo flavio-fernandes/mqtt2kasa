@@ -1,0 +1,11 @@
+services:
+  mqtt2kasa:
+    # uncomment to build using local Dockerfile
+    # build: 
+      # context: .
+      # dockerfile: Dockerfile
+    image: aderesh/mqtt2kasa
+    restart: unless-stopped
+    volumes:
+    # config.yaml should be in ./data folder
+      - ./data:/data

@@ -1,6 +1,3 @@
-# Fork
-This is a fork of https://github.com/flavio-fernandes/mqtt2kasa
-
 # mqtt2kasa
 #### Python-based project that provides wrapper to python-kasa for MQTT access
 
@@ -105,7 +102,7 @@ If there is a need to tweak that, the attributes are located in
 recent implementation of [asyncio](https://realpython.com/async-io-python/).
 
 # Docker
-There is a docker image aderesh/mqtt2kasa. Please see `docker-compose.yaml` for usage examples.
+There is a docker image [ghcr.io/flavio-fernandes/mqtt2kasa](https://github.com/flavio-fernandes/mqtt2kasa/pkgs/container/mqtt2kasa). Please see `docker-compose.yaml` for usage examples.
 
 ### TODO
 

@@ -8,7 +8,7 @@ from aiomqtt import Client, MqttError
 
 from mqtt2kasa import log
 from mqtt2kasa.config import Cfg
-from mqtt2kasa.events import KasaStateEvent, KasaEmeterEvent, MqttMsgEvent
+from mqtt2kasa.events import KasaStateEvent, KasaBrightnessEvent, KasaEmeterEvent, MqttMsgEvent
 from mqtt2kasa.kasa_wrapper import (
     Kasa,
     handle_kasa_poller,
@@ -25,6 +25,7 @@ from mqtt2kasa.mqtt import (
     handle_mqtt_messages,
 )
 
+BRIGHTNESS_TOPIC_SUFFIX = "/brightness"
 
 class RunState:
     def __init__(self):
@@ -49,6 +50,24 @@ async def handle_main_event_kasa(
         f" {kasa.topic} as {payload}"
     )
     await mqtt_send_q.put(MqttMsgEvent(topic=kasa.topic, payload=payload))
+
+async def handle_brightness_event_kasa(
+    kasa_state: KasaBrightnessEvent, run_state: RunState, mqtt_send_q: asyncio.Queue
+):
+    kasa = run_state.kasas.get(kasa_state.name)
+    if not kasa:
+        logger.warning(
+            f"Unable to find device with name {kasa_state.name}. Ignoring kasa event"
+        )
+        return
+    payload = kasa_state.brightness
+    brightness_topic = f"{kasa.topic}{BRIGHTNESS_TOPIC_SUFFIX}"
+    logger.info(
+        f"Kasa event requesting mqtt for {kasa_state.name} to publish"
+        f" {brightness_topic} as {payload}"
+    )
+
+    await mqtt_send_q.put(MqttMsgEvent(topic=brightness_topic, payload=payload))
 
 
 async def handle_emeter_event_kasa(
@@ -97,35 +116,58 @@ async def handle_main_event_mqtt(
     if not mqtt_msg.payload:
         logger.debug(f"No payload for topic {mqtt_msg.topic}. Ignoring mqtt event")
         return
-    try:
-        translated, new_state = kasa.state_parse(mqtt_msg.payload)
-        if translated:
-            await mqtt_send_q.put(
-                MqttMsgEvent(topic=mqtt_msg.topic, payload=translated)
+
+    if mqtt_msg.topic == kasa.topic:
+        try:
+            translated, new_state = kasa.state_parse(mqtt_msg.payload)
+            if translated:
+                await mqtt_send_q.put(
+                    MqttMsgEvent(topic=mqtt_msg.topic, payload=translated)
+                )
+                return
+        except ValueError as e:
+            logger.warning(f"Unexpected payload for topic {mqtt_msg.topic}: {e}")
+            return
+
+        try:
+            kasa.recv_q.put_nowait(KasaStateEvent(name=name, state=new_state))
+        except asyncio.queues.QueueFull:
+            logger.warning(
+                f"Device {name} is too busy to take request to be set as "
+                f"{kasa.state_name(new_state)}"
             )
             return
-    except ValueError as e:
-        logger.warning(f"Unexpected payload for topic {mqtt_msg.topic}: {e}")
+        msg = f"Mqtt event causing device {name} to be set as {kasa.state_name(new_state)}"
+        if kasa.state_name(new_state) != mqtt_msg.payload:
+            msg += f" ({mqtt_msg.payload})"
+        logger.info(msg)
         return
-    try:
-        kasa.recv_q.put_nowait(KasaStateEvent(name=name, state=new_state))
-    except asyncio.queues.QueueFull:
-        logger.warning(
-            f"Device {name} is too busy to take request to be set as "
-            f"{kasa.state_name(new_state)}"
-        )
-        return
-    msg = f"Mqtt event causing device {name} to be set as {kasa.state_name(new_state)}"
-    if kasa.state_name(new_state) != mqtt_msg.payload:
-        msg += f" ({mqtt_msg.payload})"
-    logger.info(msg)
 
+    if mqtt_msg.topic.endswith(BRIGHTNESS_TOPIC_SUFFIX): 
+        try:
+            new_brightness = int(mqtt_msg.payload)
+        except ValueError as e:
+            # TODO AD add test
+            logger.warning(f"Unexpected payload for topic {mqtt_msg.topic}: {e}")
+            return
+
+        try:
+            kasa.recv_q.put_nowait(KasaBrightnessEvent(name=name, brightness=new_brightness))
+        except asyncio.queues.QueueFull:
+            logger.warning(
+                f"Device {name} is too busy to take request to set '{mqtt_msg.topic}' as "
+                f"{new_brightness}"
+            )
+            return
+        logger.info(f"Mqtt event causing device {name}({mqtt_msg.topic}) to be set as {new_brightness}")
+        return            
 
 async def handle_main_events(
     run_state: RunState, mqtt_send_q: asyncio.Queue, main_events_q: asyncio.Queue
 ):
     handlers = {
         "KasaStateEvent": handle_main_event_kasa,
+        "KasaBrightnessEvent": handle_brightness_event_kasa,
         "KasaEmeterEvent": handle_emeter_event_kasa,
         "MqttMsgEvent": handle_main_event_mqtt,
     }
@@ -197,9 +239,14 @@ async def main_loop():
                     f"Topic {topic} assigned to more than one device: "
                     f"{name} and {run_state.topics[topic]}"
                 )
+
+            kasa = Kasa(name, topic, config)
             run_state.topics[topic] = name
             await client.subscribe(topic)
-            run_state.kasas[name] = Kasa(name, topic, config)
+            if await kasa.is_dimmable:
+                run_state.topics[f"{topic}{BRIGHTNESS_TOPIC_SUFFIX}"] = name
+                await client.subscribe(f"{topic}{BRIGHTNESS_TOPIC_SUFFIX}")
+            run_state.kasas[name] = kasa
 
         for kasa in run_state.kasas.values():
             tasks.add(asyncio.create_task(handle_kasa_poller(kasa, main_events_q)))

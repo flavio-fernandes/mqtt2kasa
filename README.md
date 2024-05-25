@@ -68,9 +68,16 @@ Granted the config properly refers to the TP-Link devices in the network, use re
 controlling and monitoring. Example below.
 
 Controlling the devices via MQTT via publish:
+- turning on/off
 ```shell script
 $ MQTT=192.168.1.250 && \
   mosquitto_pub -h $MQTT -t /kitchen/light_switch -m off
+```
+
+- setting brightness to 50%
+```shell script
+$ MQTT=192.168.1.250 && \
+  mosquitto_pub -h $MQTT -t /kitchen/light_switch/brightness -m 50
 ```
 
 Subscribe to see changes to devices, regardless on how they were controlled:

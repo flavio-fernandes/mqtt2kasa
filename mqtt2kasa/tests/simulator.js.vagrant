@@ -28,6 +28,14 @@ devices.push(
     data: { alias: 'Mock HS110 thing3', mac: '00:03:03:03:03:03', deviceId: 'thing3' },
   })
 );
+devices.push(
+  new Device({
+    port: 9999,
+    address: '192.168.123.204',
+    model: 'hs220',
+    data: { alias: 'Mock HS220 thing4', mac: '00:04:04:04:04:04', deviceId: 'thing4' },
+  })
+);
 
 devices.forEach((d) => {
   d.start();

@@ -13,6 +13,12 @@ from mqtt2kasa.events import KasaStateEvent, KasaBrightnessEvent, KasaEmeterEven
 
 logger = log.getLogger()
 
+class NoThrottler:
+    async def __aenter__(self):
+        return None
+    
+    async def __aexit__(self, exc_type, exc, tb):
+        pass
 
 class Kasa:
     STATE_ON = "on"
@@ -27,8 +33,12 @@ class Kasa:
         self.alias = config.get("alias")
         self.poll_interval = Cfg().poll_interval(name)
         self.emeter_poll_interval = Cfg().emeter_poll_interval(name)
-        self.recv_q = asyncio.Queue(maxsize=4)
-        self.throttler = Throttler(rate_limit=4, period=60)
+        self.recv_q = asyncio.Queue(maxsize=Cfg().receive_queue_size(name))
+        rate_limit = Cfg().throttle_rate_limit(name)
+        if rate_limit > 0:
+            self.throttler = Throttler(rate_limit=Cfg().throttle_rate_limit(name), period=Cfg().throttle_period(name))
+        else:
+            self.throttler = NoThrottler()
         self.curr_state = None
         self.curr_brightness = None
         self._device = None

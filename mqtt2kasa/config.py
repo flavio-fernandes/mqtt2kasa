@@ -117,6 +117,45 @@ class Cfg:
             or const.KASA_DEFAULT_EMETER_POLL_INTERVAL
         )
 
+    def throttle_rate_limit(self, location_name):
+        locations = self._get_info().locations
+        if isinstance(locations, collections.abc.Mapping):
+            location_attributes = locations.get(location_name, {})
+            if "throttle_rate_limit" in location_attributes:
+                return float(location_attributes["throttle_rate_limit"])
+        
+        cfg_globals = self._get_info().cfg_globals
+        if "throttle_rate_limit" in cfg_globals:
+            return float(cfg_globals["throttle_rate_limit"])
+        
+        return float(const.KASA_DEFAULT_THROTTLE_RATE_LIMIT)
+
+    def throttle_period(self, location_name):
+        locations = self._get_info().locations
+        if isinstance(locations, collections.abc.Mapping):
+            location_attributes = locations.get(location_name, {})
+            if "throttle_period" in location_attributes:
+                return float(location_attributes["throttle_period"])
+        
+        cfg_globals = self._get_info().cfg_globals
+        if "throttle_period" in cfg_globals:
+            return float(cfg_globals["throttle_period"])
+        
+        return float(const.KASA_DEFAULT_THROTTLE_PERIOD)
+
+    def receive_queue_size(self, location_name):
+        locations = self._get_info().locations
+        if isinstance(locations, collections.abc.Mapping):
+            location_attributes = locations.get(location_name, {})
+            if "receive_queue_size" in location_attributes:
+                return float(location_attributes["receive_queue_size"])
+        
+        cfg_globals = self._get_info().cfg_globals
+        if "receive_queue_size" in cfg_globals:
+            return float(cfg_globals["receive_queue_size"])
+        
+        return float(const.KASA_DEFAULT_RECEIVE_QUEUE_SIZE)        
+
     @property
     def locations(self):
         return self._get_info().locations

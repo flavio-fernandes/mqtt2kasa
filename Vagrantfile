@@ -52,7 +52,7 @@ $test_mqtt2kasa = <<SCRIPT
     cd tplink-smarthome-simulator
     npm install
     # Add secondary ips to satisfy simulator.js
-    for x in {201..203}; do
+    for x in {201..204}; do
         sudo ip a add 192.168.123.${x}/32 dev eth1
     done
     cp -v /vagrant/mqtt2kasa/tests/simulator.js.vagrant ./test/simulator.js

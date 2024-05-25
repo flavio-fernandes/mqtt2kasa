@@ -20,14 +20,16 @@ get_simulator_lines () {
 
 # restart service to trigger discovery
 sudo systemctl restart mqtt2kasa
-sleep 10
+sleep 20
 echo TEST: Check discovery
-get_log_lines 15
+get_log_lines 20
 grep --quiet -E 'Discovered 192\.168\.123\.201 .*thing1' ${TMP_OUTPUT} || \
   { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
 grep --quiet -E 'Discovered 192\.168\.123\.202 .*thing2' ${TMP_OUTPUT} || \
   { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
 grep --quiet -E 'Discovered 192\.168\.123\.203 .* thing3' ${TMP_OUTPUT} || \
+  { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
+grep --quiet -E 'Discovered 192\.168\.123\.204 .* thing4' ${TMP_OUTPUT} || \
   { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
 
 echo TEST: EMeter
@@ -77,6 +79,18 @@ grep --quiet -E '192\.168\.123\.203' ${TMP_OUTPUT} || \
 grep --quiet -E '"err_code":0' ${TMP_OUTPUT} || \
   { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
 
+echo TEST: Check brightness
+mosquitto_pub -h ${MQTT_BROKER} -t /dimmer/brightness -m "77"
+get_log_lines
+grep --quiet -E 'Mqtt event causing device dimmer\(\/dimmer\/brightness\) to be set as 77' ${TMP_OUTPUT} || \
+  { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
+get_simulator_lines
+grep --quiet -E 'set_brightness.*"brightness": 77' ${TMP_OUTPUT} || \
+  { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
+grep --quiet -E '192\.168\.123\.204' ${TMP_OUTPUT} || \
+  { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
+grep --quiet -E 'set_brightness.*"err_code":0' ${TMP_OUTPUT} || \
+  { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }  
 
 echo 'PASSED: Happy happy, joy joy!'
 rm -f ${TMP_OUTPUT}

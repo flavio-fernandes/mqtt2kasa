@@ -110,6 +110,5 @@ There is a docker image aderesh/mqtt2kasa. Please see `docker-compose.yaml` for 
 ### TODO
 
 - Add support for the smart strip, so each 'child' can be controlled independently;
-- Expose throttle config instead of hardcoded values;
 - Improve documentation?!?
 - Use strict yaml (https://hitchdev.com/strictyaml/)

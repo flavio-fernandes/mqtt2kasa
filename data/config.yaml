@@ -19,6 +19,15 @@ globals:
     # kasa will monitor the current state of the device every
     # poll interval, in seconds. You can override on a per device
     poll_interval: 11
+    # throttle_rate_limit specifices `rate_limit` value of the throttler
+    # default value is `4`. `0` disables throttle
+    throttle_rate_limit: 4
+    # throttle_period  specifies `period` value of the throttler
+    # default value is `60` seconds
+    throttle_period: 60
+    # receive_queue_size specfies command queue size
+    # Default value is `4`. `0` makes the queue and infinite queue
+    receive_queue_size: 4
 locations:
     # coffee maker. To turn it on, use mqtt publish
     # topic: /coffee_maker/switch payload: on
@@ -39,6 +48,12 @@ locations:
         alias: storage
         poll_interval: 120
         emeter_poll_interval: 600
+    # example where throttle parameters are specified
+    bedroom_lights:
+        host: 192.168.1.33
+        throttle_rate_limit: 10
+        throttle_period: 10 # seconds
+        receive_queue_size: 30
 keep_alives:
     # this is a very optional thing but can be useful. It will monitor a
     # specific topic to determine if a device should be on or off. The

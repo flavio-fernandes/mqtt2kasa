@@ -7,17 +7,19 @@ VAGRANTFILE_API_VERSION = "2"
 Vagrant.require_version ">=1.7.0"
 
 $bootstrap_ubuntu = <<SCRIPT
+export DEBIAN_FRONTEND=noninteractive
 # apt-get update && sudo apt-get -y upgrade && sudo apt-get -y dist-upgrade
-apt update
-apt install -y software-properties-common
+apt-get update
+apt-get install -y software-properties-common
 add-apt-repository -y ppa:deadsnakes/ppa
-apt install -y python3.7 python3.7-venv
-ln -sf python3.7 /usr/bin/python3
+apt-get install -y python3.10 python3.10-venv
+ln -sf python3.10 /usr/bin/python3
 
 SCRIPT
 
 $install_mosquitto = <<SCRIPT
-apt install -y mosquitto mosquitto-clients
+export DEBIAN_FRONTEND=noninteractive
+apt-get install -y mosquitto mosquitto-clients
 
 cat <<EOT > /etc/mosquitto/conf.d/localbroker.conf
 allow_anonymous true
@@ -47,7 +49,8 @@ SCRIPT
 $test_mqtt2kasa = <<SCRIPT
 [ -d 'tplink-smarthome-simulator' ] || {
     pushd ~/
-    sudo apt install -y nodejs npm git
+    export DEBIAN_FRONTEND=noninteractive
+    sudo apt-get install -y nodejs npm git
     git clone https://github.com/flavio-fernandes/tplink-smarthome-simulator.git
     cd tplink-smarthome-simulator
     npm install

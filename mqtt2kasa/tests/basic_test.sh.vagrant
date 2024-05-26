@@ -60,7 +60,7 @@ get_log_lines
 grep --quiet -E 'Mqtt event causing device foo to be set as on' ${TMP_OUTPUT} || \
   { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
 get_simulator_lines
-grep --quiet -E 'set_relay_state.*"state": 1' ${TMP_OUTPUT} || \
+grep --quiet -E 'set_relay_state.*"state":\s*1' ${TMP_OUTPUT} || \
   { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
 grep --quiet -E '192\.168\.123\.201' ${TMP_OUTPUT} || \
   { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
@@ -72,7 +72,7 @@ get_log_lines
 grep --quiet -E 'Mqtt event causing device lar to be set as off' ${TMP_OUTPUT} || \
   { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
 get_simulator_lines
-grep --quiet -E 'set_relay_state.*"state": 0' ${TMP_OUTPUT} || \
+grep --quiet -E 'set_relay_state.*"state":\s*0' ${TMP_OUTPUT} || \
   { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
 grep --quiet -E '192\.168\.123\.203' ${TMP_OUTPUT} || \
   { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
@@ -80,17 +80,19 @@ grep --quiet -E '"err_code":0' ${TMP_OUTPUT} || \
   { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
 
 echo TEST: Check brightness
-mosquitto_pub -h ${MQTT_BROKER} -t /dimmer/brightness -m "77"
-get_log_lines
-grep --quiet -E 'Mqtt event causing device dimmer\(\/dimmer\/brightness\) to be set as 77' ${TMP_OUTPUT} || \
-  { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
-get_simulator_lines
-grep --quiet -E 'set_brightness.*"brightness": 77' ${TMP_OUTPUT} || \
-  { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
-grep --quiet -E '192\.168\.123\.204' ${TMP_OUTPUT} || \
-  { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
-grep --quiet -E 'set_brightness.*"err_code":0' ${TMP_OUTPUT} || \
-  { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }  
+for brightness in 25 77; do
+  mosquitto_pub -h ${MQTT_BROKER} -t /dimmer/brightness -m ${brightness}
+  get_log_lines
+  grep --quiet -E 'Mqtt event causing device dimmer\(\/dimmer\/brightness\) to be set as '"${brightness}" ${TMP_OUTPUT} || \
+    { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
+  get_simulator_lines
+  grep --quiet -E 'set_brightness.*"brightness":\s*'"${brightness}" ${TMP_OUTPUT} || \
+    { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
+  grep --quiet -E '192\.168\.123\.204' ${TMP_OUTPUT} || \
+    { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
+  grep --quiet -E 'set_brightness.*"err_code":0' ${TMP_OUTPUT} || \
+    { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
+done
 
 echo 'PASSED: Happy happy, joy joy!'
 rm -f ${TMP_OUTPUT}

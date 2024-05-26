@@ -1,0 +1,134 @@
+name: Test mqtt2kasa
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      branch_or_commit:
+        description: 'Branch or commit to run the workflow on'
+        required: true
+        default: main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      VM_MEMORY: 512
+      VM_CPUS: 2
+
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.event.inputs.branch_or_commit }}
+
+      - name: Unset GitHub extraheader
+        run: git config --unset-all http.https://github.com/.extraheader || true
+
+      - name: Set up environment
+        run: |
+          echo id
+          id
+          pwd -P
+          ls -la
+          sudo apt-get update
+          sudo apt-get install -y software-properties-common
+          sudo add-apt-repository -y ppa:deadsnakes/ppa
+          sudo apt-get install -y python3.10 python3.10-venv
+          sudo apt-get install -y mosquitto-clients
+          sudo ln -sf /usr/bin/python3.10 /usr/bin/python3
+
+      - name: Set up vagrant user
+        run: |
+          # Create vagrant group and user with sudo powers
+          sudo groupadd vagrant
+          sudo useradd --gid vagrant --groups vagrant,users,adm --shell /bin/bash --create-home vagrant
+          echo 'vagrant ALL=(ALL) NOPASSWD:ALL' | sudo tee /etc/sudoers.d/90-vagrant
+
+          # Set up /vagrant directory. It is a mount to the cloned repo
+          sudo mkdir -pv /vagrant
+          sudo chown vagrant:vagrant /vagrant
+          sudo chown -R vagrant:vagrant "${GITHUB_WORKSPACE}"
+          sudo mount --bind "${GITHUB_WORKSPACE}" /vagrant
+
+          echo Mounted "${GITHUB_WORKSPACE}" as /vagrant
+          ls /vagrant
+
+      - name: Install mqtt2kasa
+        run: |
+          sudo -u vagrant -i <<'EOF'
+          /vagrant/mqtt2kasa/bin/create-env.sh
+          file /vagrant/env/bin
+          source /vagrant/env/bin/activate
+          pip install --upgrade pip
+          echo '[ -e /vagrant/env/bin/activate ] && source /vagrant/env/bin/activate' >> ~vagrant/.bashrc
+          ln -s /vagrant/data/config.yaml.vagrant ~vagrant/mqtt2kasa.config.yaml
+          sudo cp -v /vagrant/mqtt2kasa/bin/mqtt2kasa.service.vagrant /lib/systemd/system/mqtt2kasa.service
+          ln -s /vagrant/mqtt2kasa/bin/tail_log.sh ~vagrant/
+          ln -s /vagrant/mqtt2kasa/bin/reload_config.sh ~vagrant/
+          ln -s /vagrant/mqtt2kasa/tests/basic_test.sh.vagrant ~vagrant/basic_test.sh
+          EOF
+
+      - name: Create Mosquitto conf
+        run: |
+          echo "allow_anonymous true
+          listener 1883 0.0.0.0
+          log_type all
+          log_dest stdout" | tee /tmp/mosquitto.conf
+          echo using secondary address 192.168.123.123 as the mqtt broker
+          sudo ip a add 192.168.123.123/32 dev eth0
+
+      - name: Start Mosquitto
+        uses: namoshek/mosquitto-github-action@v1
+        with:
+          version: '1.6'
+          ports: '1883:1883 8883:8883'
+          config: /tmp/mosquitto.conf
+          container-name: 'mqtt'
+
+      - name: Install tplink-smarthome-simulator
+        run: |
+          sudo -u vagrant -i <<'EOF'
+          cd ~vagrant
+          if [ ! -d "tplink-smarthome-simulator" ]; then
+            sudo apt-get install -y nodejs npm git
+            git clone https://github.com/flavio-fernandes/tplink-smarthome-simulator.git
+            cd tplink-smarthome-simulator
+            npm install
+            for x in {201..204}; do
+              sudo ip a add 192.168.123.${x}/32 dev eth0
+            done
+            sudo cp -v /vagrant/mqtt2kasa/tests/simulator.js.vagrant ./test/simulator.js
+            sudo cp -v /vagrant/mqtt2kasa/tests/tplink-smarthome-simulator.service.vagrant /lib/systemd/system/tplink-smarthome-simulator.service
+          fi
+          EOF
+
+      - name: Start tplink-smarthome-simulator and mqtt2kasa services
+        run: |
+          sudo systemctl enable --now tplink-smarthome-simulator.service
+          sudo systemctl enable --now mqtt2kasa.service
+
+      - name: Check services and ports
+        run: |
+          echo ----
+          sudo ip route
+          sudo ss -plnt
+          echo ----
+          sudo systemctl status --full --no-pager tplink-smarthome-simulator.service
+          sudo journalctl -xeu tplink-smarthome-simulator.service
+          echo ----
+          sudo systemctl status --full --no-pager mqtt2kasa.service
+          sudo journalctl -xeu mqtt2kasa.service
+          echo ----
+          sudo docker logs mqtt
+
+      - name: Run Tests
+        run: |
+          sudo -u vagrant -i <<'EOF'
+          cd ~vagrant
+          ./basic_test.sh
+          # that was fun. do it again
+          ./basic_test.sh
+          EOF

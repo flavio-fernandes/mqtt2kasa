@@ -8,6 +8,7 @@ on:
       tag:
         description: 'Docker Image Tag'
         required: true
+        default: latest
 
 permissions:
   contents: read

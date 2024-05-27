@@ -23,10 +23,14 @@ apt-get install -y mosquitto mosquitto-clients
 
 cat <<EOT > /etc/mosquitto/conf.d/localbroker.conf
 allow_anonymous true
-bind_address 192.168.123.123
+# listener 1883 192.168.123.123
+listener 1883 0.0.0.0
+log_type all
+log_dest stdout
 EOT
 
-systemctl enable --now mosquitto
+systemctl enable mosquitto
+systemctl restart mosquitto
 systemctl status --full --no-pager mosquitto
 SCRIPT
 
@@ -54,10 +58,21 @@ $test_mqtt2kasa = <<SCRIPT
     git clone https://github.com/flavio-fernandes/tplink-smarthome-simulator.git
     cd tplink-smarthome-simulator
     npm install
-    # Add secondary ips to satisfy simulator.js
-    for x in {201..204}; do
-        sudo ip a add 192.168.123.${x}/32 dev eth1
-    done
+
+    # Add secondary IPs configuration via Netplan
+    echo "network:
+      version: 2
+      renderer: networkd
+      ethernets:
+        eth1:
+          addresses:
+            - 192.168.123.201/32
+            - 192.168.123.202/32
+            - 192.168.123.203/32
+            - 192.168.123.204/32
+    " | sudo tee /etc/netplan/02-secondary-ips.yaml > /dev/null
+    sudo netplan apply
+
     cp -v /vagrant/mqtt2kasa/tests/simulator.js.vagrant ./test/simulator.js
     sudo cp -v /vagrant/mqtt2kasa/tests/tplink-smarthome-simulator.service.vagrant \
                /lib/systemd/system/tplink-smarthome-simulator.service
@@ -66,6 +81,7 @@ $test_mqtt2kasa = <<SCRIPT
 
     # sudo journalctl --unit tplink-smarthome-simulator --since today --follow
     # sudo journalctl --unit mqtt2kasa --since today --follow
+    # sudo journalctl --unit mosquitto --since today --follow
     popd
 }
 
@@ -78,14 +94,14 @@ SCRIPT
 
 Vagrant.configure(2) do |config|
 
-    vm_memory = ENV['VM_MEMORY'] || '512'
+    vm_memory = ENV['VM_MEMORY'] || '2048'
     vm_cpus = ENV['VM_CPUS'] || '2'
 
     config.vm.hostname = "mqtt2kasaVM"
-    config.vm.box = "roboxes/ubuntu2004"
+    config.vm.box = "generic/ubuntu2204"
     config.vm.box_check_update = false
 
-    # config.vm.synced_folder "#{ENV['PWD']}", "/vagrant", sshfs_opts_append: "-o nonempty", disabled: false, type: "sshfs"
+    # config.vm.synced_folder "#{ENV['PWD']}", "/vagrant", disabled: false, type: "sshfs"
     # Optional: Uncomment line above and comment out the line below if you have
     # the vagrant sshfs plugin and would like to mount the directory using sshfs.
     config.vm.synced_folder ".", "/vagrant", type: "rsync"

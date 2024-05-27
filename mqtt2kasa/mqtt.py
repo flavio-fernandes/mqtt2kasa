@@ -28,7 +28,7 @@ async def handle_mqtt_publish(client, mqtt_send_q: asyncio.Queue):
         mqtt_send_q.task_done()
         # Dampen publishes. This is a fail-safe and should not affect anything unless
         # there is a bug lurking somewhere
-        await asyncio.sleep(1)
+        await asyncio.sleep(0.5)
 
 
 async def handle_mqtt_messages(messages, main_events_q: asyncio.Queue):

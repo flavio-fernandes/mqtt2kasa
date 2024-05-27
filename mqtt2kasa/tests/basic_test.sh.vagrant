@@ -35,7 +35,17 @@ grep --quiet -E 'Discovered 192\.168\.123\.204 .* thing4' ${TMP_OUTPUT} || \
 echo TEST: EMeter
 grep --quiet -E 'bar has no emeter' ${TMP_OUTPUT} || \
   { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
-grep --quiet -E 'emeter event requesting mqtt for lar to publish /lar/switch/emeter' ${TMP_OUTPUT} || \
+grep --quiet -E 'emeter event requesting mqtt for lar to publish /lar/switch/emeter as ' ${TMP_OUTPUT} || \
+  { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
+grep --quiet -E 'publish /lar/switch/emeter as .*timestamp' ${TMP_OUTPUT} || \
+  { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
+grep --quiet -E 'publish /lar/switch/emeter as .*current' ${TMP_OUTPUT} || \
+  { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
+grep --quiet -E 'publish /lar/switch/emeter as .*power' ${TMP_OUTPUT} || \
+  { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
+grep --quiet -E 'publish /lar/switch/emeter as .*voltage' ${TMP_OUTPUT} || \
+  { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
+grep --quiet -E 'publish /lar/switch/emeter as .*total' ${TMP_OUTPUT} || \
   { echo "FAILED in $0 line ${LINENO}" >&2; exit ${LINENO}; }
 
 echo TEST: Check on/off

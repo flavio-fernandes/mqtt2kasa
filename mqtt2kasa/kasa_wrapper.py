@@ -13,12 +13,14 @@ from mqtt2kasa.events import KasaStateEvent, KasaBrightnessEvent, KasaEmeterEven
 
 logger = log.getLogger()
 
+
 class NoThrottler:
     async def __aenter__(self):
         return None
-    
+
     async def __aexit__(self, exc_type, exc, tb):
         pass
+
 
 class Kasa:
     STATE_ON = "on"
@@ -36,7 +38,10 @@ class Kasa:
         self.recv_q = asyncio.Queue(maxsize=Cfg().receive_queue_size(name))
         rate_limit = Cfg().throttle_rate_limit(name)
         if rate_limit > 0:
-            self.throttler = Throttler(rate_limit=Cfg().throttle_rate_limit(name), period=Cfg().throttle_period(name))
+            self.throttler = Throttler(
+                rate_limit=Cfg().throttle_rate_limit(name),
+                period=Cfg().throttle_period(name),
+            )
         else:
             self.throttler = NoThrottler()
         self.curr_state = None
@@ -120,7 +125,7 @@ class Kasa:
                 await device.set_brightness(brightness)
                 self.curr_brightness = brightness
             except SmartDeviceException as e:
-                logger.error(f"{self.host} unable to set brightness: {e}")         
+                logger.error(f"{self.host} unable to set brightness: {e}")
 
     async def turn_on(self):
         async with self.throttler:
@@ -236,13 +241,13 @@ async def handle_kasa_poller(kasa: Kasa, main_events_q: asyncio.Queue):
             if kasa.curr_brightness != new_brightness or fails:
                 if new_brightness is None:
                     fails += 1
-                    logger.error(f"Polling {kasa.name} ({kasa.host}) failed {fails} times")
+                    logger.error(
+                        f"Polling {kasa.name} ({kasa.host}) failed {fails} times"
+                    )
                 else:
                     fails = 0
                     await main_events_q.put(
-                        KasaBrightnessEvent(
-                            name=kasa.name, brightness=new_brightness
-                        )
+                        KasaBrightnessEvent(name=kasa.name, brightness=new_brightness)
                     )
                     kasa.curr_brightness = new_brightness
 
@@ -304,31 +309,25 @@ async def handle_kasa_requests(kasa: Kasa):
 
         kasa.recv_q.task_done()
 
-async def handle_kasa_request_state(kasa: Kasa, event: KasaStateEvent):        
+
+async def handle_kasa_request_state(kasa: Kasa, event: KasaStateEvent):
     wanted_state = event.state
     if wanted_state != kasa.curr_state:
-        logger.info(
-            f"{kasa.name} changing state to {kasa.state_name(wanted_state)}"
-        )
+        logger.info(f"{kasa.name} changing state to {kasa.state_name(wanted_state)}")
         if wanted_state:
             await kasa.turn_on()
         else:
             await kasa.turn_off()
     else:
-        logger.debug(
-            f"{kasa.name} state unchanged as {kasa.state_name(wanted_state)}"
-        )
+        logger.debug(f"{kasa.name} state unchanged as {kasa.state_name(wanted_state)}")
 
-async def handle_kasa_request_brightness(kasa: Kasa, event: KasaBrightnessEvent):        
+
+async def handle_kasa_request_brightness(kasa: Kasa, event: KasaBrightnessEvent):
     wanted_brightness = event.brightness
     if wanted_brightness != kasa.curr_brightness:
-        logger.info(
-            f"{kasa.name} changing brightness to {wanted_brightness}"
-        )
+        logger.info(f"{kasa.name} changing brightness to {wanted_brightness}")
 
         await kasa.set_brightness(wanted_brightness)
-    
+
     else:
-        logger.debug(
-            f"{kasa.name} brightness unchanged as {wanted_brightness}"
-        )        
+        logger.debug(f"{kasa.name} brightness unchanged as {wanted_brightness}")

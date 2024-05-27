@@ -9,7 +9,12 @@ from aiomqtt import Client, MqttError
 from datetime import datetime, timezone
 from mqtt2kasa import log
 from mqtt2kasa.config import Cfg
-from mqtt2kasa.events import KasaStateEvent, KasaBrightnessEvent, KasaEmeterEvent, MqttMsgEvent
+from mqtt2kasa.events import (
+    KasaStateEvent,
+    KasaBrightnessEvent,
+    KasaEmeterEvent,
+    MqttMsgEvent,
+)
 from mqtt2kasa.kasa_wrapper import (
     Kasa,
     handle_kasa_poller,
@@ -28,12 +33,14 @@ from mqtt2kasa.mqtt import (
 
 BRIGHTNESS_TOPIC_SUFFIX = "/brightness"
 
+
 class RunState:
     def __init__(self):
         self.kasas: dict[str, Kasa] = {}
         self.topics: dict[str, str] = {}
         self.keep_alives: dict[str, KeepAlive] = {}
         self.keep_alive_topics: dict[str, str] = {}
+
 
 def create_timestamp_dict(data: Optional[Dict] = None) -> Dict:
     utc_time = datetime.now(timezone.utc)
@@ -42,6 +49,7 @@ def create_timestamp_dict(data: Optional[Dict] = None) -> Dict:
         data = {}
     data["timestamp"] = epoch_utc_secs
     return data
+
 
 async def handle_main_event_kasa(
     kasa_state: KasaStateEvent, run_state: RunState, mqtt_send_q: asyncio.Queue
@@ -61,8 +69,12 @@ async def handle_main_event_kasa(
 
     # https://github.com/flavio-fernandes/mqtt2kasa/issues/14
     status_json_topic = f"{kasa.topic}/status"
-    status_payload = create_timestamp_dict({"name": kasa_state.name, "state": kasa.state_name(kasa_state.state)})
-    await mqtt_send_q.put(MqttMsgEvent(topic=status_json_topic, payload=json.dumps(status_payload)))
+    status_payload = create_timestamp_dict(
+        {"name": kasa_state.name, "state": kasa.state_name(kasa_state.state)}
+    )
+    await mqtt_send_q.put(
+        MqttMsgEvent(topic=status_json_topic, payload=json.dumps(status_payload))
+    )
 
 
 async def handle_brightness_event_kasa(
@@ -95,7 +107,9 @@ async def handle_emeter_event_kasa(
         return
     emeter_topic = f"{kasa.topic}/emeter"
     status_payload = kasa_emeter.emeter_status
-    await mqtt_send_q.put(MqttMsgEvent(topic=f"{emeter_topic}/status", payload=status_payload))
+    await mqtt_send_q.put(
+        MqttMsgEvent(topic=f"{emeter_topic}/status", payload=status_payload)
+    )
 
     # also publish each value as a topic
     # https://github.com/flavio-fernandes/mqtt2kasa/issues/10
@@ -105,9 +119,14 @@ async def handle_emeter_event_kasa(
         iter_emeter_topic = f"{emeter_topic}/{key}"
         emeter_payload_dict[key] = value
         await mqtt_send_q.put(MqttMsgEvent(topic=iter_emeter_topic, payload=value))
-    
+
     # https://github.com/flavio-fernandes/mqtt2kasa/issues/14
-    await mqtt_send_q.put(MqttMsgEvent(topic=f"{emeter_topic}/timestamp", payload=emeter_payload_dict.get("timestamp")))
+    await mqtt_send_q.put(
+        MqttMsgEvent(
+            topic=f"{emeter_topic}/timestamp",
+            payload=emeter_payload_dict.get("timestamp"),
+        )
+    )
 
     emeter_json_payload = json.dumps(emeter_payload_dict)
     logger.info(
@@ -174,7 +193,7 @@ async def handle_main_event_mqtt(
         )
         return
 
-    if mqtt_msg.topic.endswith(BRIGHTNESS_TOPIC_SUFFIX): 
+    if mqtt_msg.topic.endswith(BRIGHTNESS_TOPIC_SUFFIX):
         try:
             new_brightness = int(mqtt_msg.payload)
         except ValueError as e:
@@ -183,15 +202,20 @@ async def handle_main_event_mqtt(
             return
 
         try:
-            kasa.recv_q.put_nowait(KasaBrightnessEvent(name=name, brightness=new_brightness))
+            kasa.recv_q.put_nowait(
+                KasaBrightnessEvent(name=name, brightness=new_brightness)
+            )
         except asyncio.queues.QueueFull:
             logger.warning(
                 f"Device {name} is too busy to take request to set '{mqtt_msg.topic}' as "
                 f"{new_brightness}"
             )
             return
-        logger.info(f"Mqtt event causing device {name}({mqtt_msg.topic}) to be set as {new_brightness}")
-        return            
+        logger.info(
+            f"Mqtt event causing device {name}({mqtt_msg.topic}) to be set as {new_brightness}"
+        )
+        return
+
 
 async def handle_main_events(
     run_state: RunState, mqtt_send_q: asyncio.Queue, main_events_q: asyncio.Queue

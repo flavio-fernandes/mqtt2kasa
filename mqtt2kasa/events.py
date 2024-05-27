@@ -39,10 +39,12 @@ class KasaStateEvent(BaseEvent):
         expected_attrs = "name", "state"
         super().__init__(expected_attrs, attrs)
 
+
 class KasaBrightnessEvent(BaseEvent):
     def __init__(self, **attrs):
         expected_attrs = "name", "brightness"
         super().__init__(expected_attrs, attrs)
+
 
 class KasaEmeterEvent(BaseEvent):
     def __init__(self, **attrs):

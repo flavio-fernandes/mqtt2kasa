@@ -8,8 +8,10 @@ format = "%(asctime)s %(module)12s:%(lineno)-d %(levelname)-8s %(message)s"
 formatter = logging.Formatter(format)
 consoleHandler.setFormatter(formatter)
 
+
 def getLogger():
     return logging.getLogger("mqtt2kasa")
+
 
 def _log_handler_address(files=tuple()):
     try:
@@ -20,20 +22,20 @@ def _log_handler_address(files=tuple()):
         )
         return None
 
+
 def is_running_in_docker():
-    return path.exists('/.dockerenv')
+    return path.exists("/.dockerenv")
+
 
 def initLogger(testing=False):
     logger = getLogger()
-    logger.setLevel(logging.INFO)        
+    logger.setLevel(logging.INFO)
 
     if is_running_in_docker():
         log_to_console()
         getLogger().info("Running in a Docker container. Logs are sent to stdout only")
     else:
-        format = (
-            "%(asctime)s [mqtt2kasa] %(module)12s:%(lineno)-d %(levelname)-8s %(message)s"
-        )
+        format = "%(asctime)s [mqtt2kasa] %(module)12s:%(lineno)-d %(levelname)-8s %(message)s"
         formatter = logging.Formatter(format)
 
         # Logs are normally configured here: /etc/rsyslog.d/*

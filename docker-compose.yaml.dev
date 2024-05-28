@@ -1,0 +1,32 @@
+services:
+  mqttdev:
+    image: eclipse-mosquitto:latest
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mqtt2kasa/tests/mosquitto/config:/mosquitto/config
+      # - ./mqtt2kasa/tests/mosquitto/data:/mosquitto/data
+      # - ./mqtt2kasa/tests/mosquitto/log:/mosquitto/log
+
+  mqtt2kasa:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ghcr.io/flavio-fernandes/mqtt2kasa
+    restart: unless-stopped
+    depends_on:
+      - mqttdev
+    volumes:
+      # config.yaml should be in ./data folder
+      - ./mqtt2kasa/tests/mosquitto/data:/data
+
+  mqttclient:
+    build:
+      context: .
+      dockerfile: Dockerfile.mqttclient
+    restart: unless-stopped
+    depends_on:
+      - mqttdev
+    environment:
+      BROKER: mqttdev

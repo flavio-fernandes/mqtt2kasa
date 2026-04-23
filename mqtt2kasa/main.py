@@ -275,12 +275,12 @@ async def main_loop():
             mqtt_broker_ip,
             username=mqtt_username,
             password=mqtt_password,
-            client_id=mqtt_client_id,
+            identifier=mqtt_client_id,
+            timeout=15,
         )
         await stack.enter_async_context(client)
 
-        messages = await stack.enter_async_context(client.unfiltered_messages())
-        task = asyncio.create_task(handle_mqtt_messages(messages, main_events_q))
+        task = asyncio.create_task(handle_mqtt_messages(client.messages, main_events_q))
         tasks.add(task)
 
         task = asyncio.create_task(handle_mqtt_publish(client, mqtt_send_q))

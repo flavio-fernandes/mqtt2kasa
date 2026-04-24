@@ -276,7 +276,6 @@ async def main_loop():
             username=mqtt_username,
             password=mqtt_password,
             identifier=mqtt_client_id,
-            timeout=15,
         )
         await stack.enter_async_context(client)
 

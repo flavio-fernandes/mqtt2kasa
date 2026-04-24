@@ -33,7 +33,7 @@ async def handle_mqtt_publish(client, mqtt_send_q: asyncio.Queue):
 
 async def handle_mqtt_messages(messages, main_events_q: asyncio.Queue):
     async for message in messages:
-        msg_topic = message.topic
+        msg_topic = str(message.topic)
         msg_payload = message.payload.decode()
         logger.debug(f"Received mqtt topic:{msg_topic} payload:{msg_payload}")
         await main_events_q.put(MqttMsgEvent(topic=msg_topic, payload=msg_payload))

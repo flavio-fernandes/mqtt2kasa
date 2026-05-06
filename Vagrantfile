@@ -40,13 +40,13 @@ source /vagrant/env/bin/activate
 pip install --upgrade pip
 echo '[ -e /vagrant/env/bin/activate ] && source /vagrant/env/bin/activate' >> ~/.bashrc
 
-ln -s /vagrant/data/config.yaml.vagrant ~/mqtt2kasa.config.yaml
+ln -sfn /vagrant/data/config.yaml.vagrant ~/mqtt2kasa.config.yaml
 sudo cp -v /vagrant/mqtt2kasa/bin/mqtt2kasa.service.vagrant /lib/systemd/system/mqtt2kasa.service
 sudo systemctl enable --now mqtt2kasa.service
 
-ln -s /vagrant/mqtt2kasa/bin/tail_log.sh ~/
-ln -s /vagrant/mqtt2kasa/bin/reload_config.sh ~/
-ln -s /vagrant/mqtt2kasa/tests/basic_test.sh.vagrant ~/basic_test.sh
+ln -sfn /vagrant/mqtt2kasa/bin/tail_log.sh ~/tail_log.sh
+ln -sfn /vagrant/mqtt2kasa/bin/reload_config.sh ~/reload_config.sh
+ln -sfn /vagrant/mqtt2kasa/tests/basic_test.sh.vagrant ~/basic_test.sh
 SCRIPT
 
 $test_mqtt2kasa = <<SCRIPT

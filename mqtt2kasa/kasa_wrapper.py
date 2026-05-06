@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 import asyncio
 import random
-from typing import Optional
+from typing import Any, Optional
 
 from asyncio_throttle import Throttler
-from kasa import Discover, EmeterStatus
-from kasa.smartdevice import SmartDevice, SmartDeviceException
+from kasa import Device, Discover, Module
+from kasa.exceptions import KasaException
 
 from mqtt2kasa import log
 from mqtt2kasa.config import Cfg
@@ -20,6 +20,10 @@ class NoThrottler:
 
     async def __aexit__(self, exc_type, exc, tb):
         pass
+
+
+class KasaDiscoveryError(KasaException):
+    pass
 
 
 class Kasa:
@@ -49,10 +53,12 @@ class Kasa:
         self._device = None
         assert self.host or self.alias
 
-    async def _get_device(self) -> SmartDevice:
+    async def _get_device(self) -> Device:
         if not self._device:
             if self.host:
                 self._device = await Discover.discover_single(self.host)
+                if self._device is None:
+                    raise KasaDiscoveryError(f"Unable to locate device at {self.host}")
                 self.alias = self._device.alias
             else:
                 self.host, self._device = await self._find_by_alias(
@@ -64,6 +70,14 @@ class Kasa:
                 f" mac:{self._device.mac}"
             )
         return self._device
+
+    @staticmethod
+    def _light_module(device: Device) -> Any:
+        return device.modules.get(Module.Light)
+
+    @staticmethod
+    def _energy_module(device: Device) -> Any:
+        return device.modules.get(Module.Energy)
 
     @property
     def started(self):
@@ -78,7 +92,7 @@ class Kasa:
                 await device.update()
                 if device.alias == alias:
                     return addr, device
-        except SmartDeviceException as e:
+        except KasaException as e:
             logger.warning(
                 f"Discovering device with alias {alias} did not go well: {e}"
             )
@@ -86,7 +100,7 @@ class Kasa:
         if retry < 3:
             cls._discovered_devices = None
             return await cls._find_by_alias(name, alias, retry + 1)
-        raise RuntimeError(f"Unable to locate {name} from alias {alias}")
+        raise KasaDiscoveryError(f"Unable to locate {name} from alias {alias}")
 
     @property
     async def is_on(self) -> Optional[bool]:
@@ -94,7 +108,7 @@ class Kasa:
             device = await self._get_device()
             await device.update()
             return device.is_on
-        except SmartDeviceException as e:
+        except KasaException as e:
             logger.error(f"{self.host} unable to fetch is_on: {e}")
         # implicit return None
 
@@ -103,8 +117,13 @@ class Kasa:
         try:
             device = await self._get_device()
             await device.update()
-            return device.is_dimmable
-        except SmartDeviceException as e:
+            light = self._light_module(device)
+            if light is not None:
+                if hasattr(light, "has_feature"):
+                    return light.has_feature("brightness")
+                return hasattr(light, "brightness")
+            return False
+        except KasaException as e:
             logger.error(f"{self.host} unable to fetch is_dimmable: {e}")
         # implicit return None
 
@@ -113,8 +132,11 @@ class Kasa:
         try:
             device = await self._get_device()
             await device.update()
-            return device.brightness
-        except SmartDeviceException as e:
+            light = self._light_module(device)
+            if light is None:
+                return None
+            return light.brightness
+        except KasaException as e:
             logger.error(f"{self.host} unable to fetch brightness: {e}")
         # implicit return None
 
@@ -122,9 +144,12 @@ class Kasa:
         async with self.throttler:
             try:
                 device = await self._get_device()
-                await device.set_brightness(brightness)
+                light = self._light_module(device)
+                if light is None:
+                    raise RuntimeError("device has no brightness support")
+                await light.set_brightness(brightness)
                 self.curr_brightness = brightness
-            except SmartDeviceException as e:
+            except (KasaException, RuntimeError) as e:
                 logger.error(f"{self.host} unable to set brightness: {e}")
 
     async def turn_on(self):
@@ -133,7 +158,7 @@ class Kasa:
                 device = await self._get_device()
                 await device.turn_on()
                 self.curr_state = True
-            except SmartDeviceException as e:
+            except KasaException as e:
                 logger.error(f"{self.host} unable to turn_on: {e}")
 
     async def turn_off(self):
@@ -142,7 +167,7 @@ class Kasa:
                 device = await self._get_device()
                 await device.turn_off()
                 self.curr_state = False
-            except SmartDeviceException as e:
+            except KasaException as e:
                 logger.error(f"{self.host} unable to turn_off: {e}")
 
     @property
@@ -151,17 +176,20 @@ class Kasa:
             device = await self._get_device()
             await device.update()
             return device.has_emeter
-        except SmartDeviceException as e:
+        except KasaException as e:
             logger.error(f"{self.host} unable to get has_emeter: {e}")
         # implicit return None
 
     @property
-    async def emeter_realtime(self) -> Optional[EmeterStatus]:
+    async def emeter_realtime(self) -> Optional[Any]:
         try:
             device = await self._get_device()
             await device.update()
-            return device.emeter_realtime
-        except SmartDeviceException as e:
+            energy = self._energy_module(device)
+            if energy is None:
+                return None
+            return energy.status
+        except KasaException as e:
             logger.error(f"{self.host} unable to fetch emeter: {e}")
         # implicit return None
 

@@ -11,9 +11,8 @@ export DEBIAN_FRONTEND=noninteractive
 # apt-get update && sudo apt-get -y upgrade && sudo apt-get -y dist-upgrade
 apt-get update
 apt-get install -y software-properties-common
-add-apt-repository -y ppa:deadsnakes/ppa
-apt-get install -y python3.10 python3.10-venv
-ln -sf python3.10 /usr/bin/python3
+# Use native Python 3 available in ubuntu-latest
+apt-get install -y python3-venv python3-pip
 
 SCRIPT
 

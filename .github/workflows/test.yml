@@ -63,11 +63,11 @@ jobs:
           source /vagrant/env/bin/activate
           pip install --upgrade pip
           echo '[ -e /vagrant/env/bin/activate ] && source /vagrant/env/bin/activate' >> ~vagrant/.bashrc
-          ln -s /vagrant/data/config.yaml.vagrant ~vagrant/mqtt2kasa.config.yaml
+          ln -sfn /vagrant/data/config.yaml.vagrant ~vagrant/mqtt2kasa.config.yaml
           sudo cp -v /vagrant/mqtt2kasa/bin/mqtt2kasa.service.vagrant /lib/systemd/system/mqtt2kasa.service
-          ln -s /vagrant/mqtt2kasa/bin/tail_log.sh ~vagrant/
-          ln -s /vagrant/mqtt2kasa/bin/reload_config.sh ~vagrant/
-          ln -s /vagrant/mqtt2kasa/tests/basic_test.sh.vagrant ~vagrant/basic_test.sh
+          ln -sfn /vagrant/mqtt2kasa/bin/tail_log.sh ~vagrant/tail_log.sh
+          ln -sfn /vagrant/mqtt2kasa/bin/reload_config.sh ~vagrant/reload_config.sh
+          ln -sfn /vagrant/mqtt2kasa/tests/basic_test.sh.vagrant ~vagrant/basic_test.sh
           EOF
 
       - name: Create Mosquitto conf

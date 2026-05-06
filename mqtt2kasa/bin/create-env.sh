@@ -13,7 +13,7 @@ if [ ! -e ./env ]; then
     python3 -m venv --copies env
 fi
 source ./env/bin/activate
-#pip install --upgrade pip setuptools
+pip install --upgrade pip setuptools wheel
 pip install --ignore-installed -r ./requirements.txt
 deactivate
 

@@ -87,6 +87,11 @@ $test_mqtt2kasa = <<SCRIPT
 # sudo systemctl restart tplink-smarthome-simulator.service
 sudo systemctl status --full --no-pager mqtt2kasa
 sleep 5  ; # give it a few secs for service to start
+pushd /vagrant
+source /vagrant/env/bin/activate
+pip install pytest
+python -m pytest mqtt2kasa/tests/unit
+popd
 ~/basic_test.sh
 SCRIPT
 

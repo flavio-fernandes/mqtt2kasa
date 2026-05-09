@@ -123,6 +123,15 @@ jobs:
           echo ----
           sudo docker logs mqtt
 
+      - name: Run Unit Tests
+        run: |
+          sudo -u vagrant -i <<'EOF'
+          cd /vagrant
+          source /vagrant/env/bin/activate
+          pip install pytest
+          python -m pytest mqtt2kasa/tests/unit
+          EOF
+
       - name: Run Tests
         run: |
           sudo -u vagrant -i <<'EOF'

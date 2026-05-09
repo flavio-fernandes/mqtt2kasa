@@ -9,7 +9,12 @@ from kasa.exceptions import KasaException
 
 from mqtt2kasa import log
 from mqtt2kasa.config import Cfg
-from mqtt2kasa.events import KasaStateEvent, KasaBrightnessEvent, KasaEmeterEvent
+from mqtt2kasa.events import (
+    KasaAvailabilityEvent,
+    KasaStateEvent,
+    KasaBrightnessEvent,
+    KasaEmeterEvent,
+)
 
 logger = log.getLogger()
 
@@ -39,6 +44,7 @@ class Kasa:
         self.alias = config.get("alias")
         self.poll_interval = Cfg().poll_interval(name)
         self.emeter_poll_interval = Cfg().emeter_poll_interval(name)
+        self.offline_after_failures = Cfg().offline_after_failures(name)
         self.recv_q = asyncio.Queue(maxsize=Cfg().receive_queue_size(name))
         rate_limit = Cfg().throttle_rate_limit(name)
         if rate_limit > 0:
@@ -50,6 +56,7 @@ class Kasa:
             self.throttler = NoThrottler()
         self.curr_state = None
         self.curr_brightness = None
+        self.online = None
         self._device = None
         assert self.host or self.alias
 
@@ -204,6 +211,12 @@ class Kasa:
         return cls.STATE_ON if is_on else cls.STATE_OFF
 
     @staticmethod
+    def availability_name(online: Optional[bool]) -> str:
+        if online is None:
+            return "unknown"
+        return "online" if online else "offline"
+
+    @staticmethod
     def state_is_toggle(is_toggle: str) -> bool:
         return is_toggle.lower() in ("toggle", "flip", "other", "change", "reverse")
 
@@ -256,6 +269,11 @@ async def handle_kasa_poller(kasa: Kasa, main_events_q: asyncio.Queue):
             logger.error(
                 f"Polling {kasa.name} ({kasa.host}) failed {state_fails} times"
             )
+            if state_fails >= kasa.offline_after_failures and kasa.online is not False:
+                kasa.online = False
+                await main_events_q.put(
+                    KasaAvailabilityEvent(name=kasa.name, online=False)
+                )
         else:
             if state_fails:
                 logger.info(
@@ -263,9 +281,15 @@ async def handle_kasa_poller(kasa: Kasa, main_events_q: asyncio.Queue):
                     f" {state_fails} failed attempts"
                 )
                 state_fails = 0
+            if kasa.online is not True:
+                kasa.online = True
+                await main_events_q.put(
+                    KasaAvailabilityEvent(name=kasa.name, online=True)
+                )
             # Recovering from a failed poll is not a state change. Publishing it
             # as one makes every subscriber see a duplicate transition, and on a
             # topic published with retain it also rewrites the retained value.
+            # A device that went away is reported on the availability topic.
             if kasa.curr_state != new_state:
                 await main_events_q.put(
                     KasaStateEvent(

@@ -50,3 +50,9 @@ class KasaEmeterEvent(BaseEvent):
     def __init__(self, **attrs):
         expected_attrs = "name", "emeter_status"
         super().__init__(expected_attrs, attrs)
+
+
+class KasaAvailabilityEvent(BaseEvent):
+    def __init__(self, **attrs):
+        expected_attrs = "name", "online"
+        super().__init__(expected_attrs, attrs)

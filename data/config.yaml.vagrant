@@ -9,6 +9,7 @@ knobs:
 globals:
     # test with slow polls to make log less confusing
     poll_interval: 3600
+    offline_after_failures: 3
     # emeter_poll_interval: 0
     # topic_format: /kasa/device/{}
 locations:
@@ -16,6 +17,8 @@ locations:
         topic: /foo
         host: 192.168.123.201
         alias: Mock HS100 thing1
+        poll_interval: 2
+        offline_after_failures: 1
     bar:
         # host: 192.168.123.202
         alias: Mock HS105 thing2
@@ -33,4 +36,3 @@ locations:
         # alias: Mock HS220 thing4
         # brightness can be changed on this device
         emeter_poll_interval: 888
-

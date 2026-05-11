@@ -1,4 +1,4 @@
-FROM python:3.10.12-slim
+FROM python:3.10.20-slim
 WORKDIR /usr/src/app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

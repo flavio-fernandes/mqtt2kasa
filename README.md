@@ -25,6 +25,9 @@ globals:
     # if devices support metering (aka emeter), use this poll
     # interval to publish it. You can override on a per device
     # emeter_poll_interval: 600
+    # publish a device as offline after this many consecutive poll
+    # failures. You can override on a per device
+    offline_after_failures: 3
 locations:
     # coffee maker. To turn it on, use mqtt publish
     # topic: /coffee_maker/switch payload: on
@@ -44,6 +47,7 @@ locations:
         alias: storage
         poll_interval: 120
         emeter_poll_interval: 1800
+        offline_after_failures: 5
 ```
 
 Devices are connected via **host** or discovered by Kasa via **alias**. There are more attributes
@@ -85,6 +89,17 @@ $ MQTT=192.168.1.250 && \
 2021-02-18T10:16:19-0500 : 0 : /kitchen/light_switch : on
 2021-02-18T10:16:26-0500 : 0 : /kitchen/light_switch : off
 2021-01-30T21:43:03-0500 : 0 : /toaster/switch : on
+```
+
+Subscribe to device availability topics to see when polling detects that a
+device went offline or came back online:
+```shell script
+$ mosquitto_sub -h $MQTT -t '/+/switch/availability' -t /kitchen/light_switch/availability
+```
+
+The JSON status topic also includes current availability:
+```json
+{"name": "kitchen lights", "state": "on", "availability": "online", "timestamp": 1613661386}
 ```
 
 **NOTE on Metering**: If metering is supported by device and `emeter_poll_interval` was provided, it will be published via topics that end with "emeter":

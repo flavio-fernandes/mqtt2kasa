@@ -117,6 +117,19 @@ class Cfg:
             or const.KASA_DEFAULT_EMETER_POLL_INTERVAL
         )
 
+    def offline_after_failures(self, location_name):
+        locations = self._get_info().locations
+        if isinstance(locations, collections.abc.Mapping):
+            location_attributes = locations.get(location_name, {})
+            if "offline_after_failures" in location_attributes:
+                return int(location_attributes["offline_after_failures"])
+
+        cfg_globals = self._get_info().cfg_globals
+        if "offline_after_failures" in cfg_globals:
+            return int(cfg_globals["offline_after_failures"])
+
+        return int(const.KASA_DEFAULT_OFFLINE_AFTER_FAILURES)
+
     def throttle_rate_limit(self, location_name):
         locations = self._get_info().locations
         if isinstance(locations, collections.abc.Mapping):

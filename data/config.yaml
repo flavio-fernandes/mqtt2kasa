@@ -19,6 +19,9 @@ globals:
     # kasa will monitor the current state of the device every
     # poll interval, in seconds. You can override on a per device
     poll_interval: 11
+    # publish a device as offline after this many consecutive poll
+    # failures. You can override on a per device
+    offline_after_failures: 3
     # throttle_rate_limit specifices `rate_limit` value of the throttler
     # default value is `4`. `0` disables throttle
     throttle_rate_limit: 4
@@ -48,6 +51,7 @@ locations:
         alias: storage
         poll_interval: 120
         emeter_poll_interval: 600
+        # offline_after_failures: 5
     # example where throttle parameters are specified
     bedroom_lights:
         host: 192.168.1.33

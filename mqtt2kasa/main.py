@@ -11,6 +11,7 @@ from mqtt2kasa import log
 from mqtt2kasa.config import Cfg
 from mqtt2kasa.events import (
     KasaStateEvent,
+    KasaAvailabilityEvent,
     KasaBrightnessEvent,
     KasaEmeterEvent,
     MqttMsgEvent,
@@ -32,6 +33,7 @@ from mqtt2kasa.mqtt import (
 )
 
 BRIGHTNESS_TOPIC_SUFFIX = "/brightness"
+AVAILABILITY_TOPIC_SUFFIX = "/availability"
 
 
 class RunState:
@@ -51,6 +53,33 @@ def create_timestamp_dict(data: Optional[Dict] = None) -> Dict:
     return data
 
 
+def create_status_payload(kasa: Kasa, name: str, state) -> str:
+    status_payload = create_timestamp_dict(
+        {
+            "name": name,
+            "state": kasa.state_name(state),
+            "availability": kasa.availability_name(kasa.online),
+        }
+    )
+    return json.dumps(status_payload)
+
+
+async def publish_status_event(
+    kasa: Kasa,
+    name: str,
+    state,
+    mqtt_send_q: asyncio.Queue,
+    log_prefix: Optional[str] = None,
+):
+    status_topic = f"{kasa.topic}/status"
+    status_payload = create_status_payload(kasa, name, state)
+    if log_prefix:
+        logger.info(f"{log_prefix} {status_topic} as {status_payload}")
+    await mqtt_send_q.put(
+        MqttMsgEvent(topic=status_topic, payload=status_payload)
+    )
+
+
 async def handle_main_event_kasa(
     kasa_state: KasaStateEvent, run_state: RunState, mqtt_send_q: asyncio.Queue
 ):
@@ -68,12 +97,39 @@ async def handle_main_event_kasa(
     await mqtt_send_q.put(MqttMsgEvent(topic=kasa.topic, payload=payload))
 
     # https://github.com/flavio-fernandes/mqtt2kasa/issues/14
-    status_json_topic = f"{kasa.topic}/status"
-    status_payload = create_timestamp_dict(
-        {"name": kasa_state.name, "state": kasa.state_name(kasa_state.state)}
+    await publish_status_event(
+        kasa, kasa_state.name, kasa_state.state, mqtt_send_q
     )
-    await mqtt_send_q.put(
-        MqttMsgEvent(topic=status_json_topic, payload=json.dumps(status_payload))
+
+
+async def handle_availability_event_kasa(
+    kasa_availability: KasaAvailabilityEvent,
+    run_state: RunState,
+    mqtt_send_q: asyncio.Queue,
+):
+    kasa = run_state.kasas.get(kasa_availability.name)
+    if not kasa:
+        logger.warning(
+            f"Unable to find device with name {kasa_availability.name}. "
+            "Ignoring kasa availability event"
+        )
+        return
+    kasa.online = kasa_availability.online
+    payload = kasa.availability_name(kasa_availability.online)
+    availability_topic = f"{kasa.topic}{AVAILABILITY_TOPIC_SUFFIX}"
+    logger.info(
+        f"Kasa availability event requesting mqtt for {kasa_availability.name} to publish"
+        f" {availability_topic} as {payload}"
+    )
+    await mqtt_send_q.put(MqttMsgEvent(topic=availability_topic, payload=payload))
+
+    await publish_status_event(
+        kasa,
+        kasa_availability.name,
+        kasa.curr_state,
+        mqtt_send_q,
+        f"Kasa availability event requesting mqtt for "
+        f"{kasa_availability.name} to publish",
     )
 
 
@@ -184,13 +240,7 @@ async def handle_main_event_mqtt(
         logger.info(msg)
 
         # https://github.com/flavio-fernandes/mqtt2kasa/issues/14
-        status_json_topic = f"{kasa.topic}/status"
-        status_payload = create_timestamp_dict(
-            {"name": name, "state": kasa.state_name(new_state)}
-        )
-        await mqtt_send_q.put(
-            MqttMsgEvent(topic=status_json_topic, payload=json.dumps(status_payload))
-        )
+        await publish_status_event(kasa, name, new_state, mqtt_send_q)
         return
 
     if mqtt_msg.topic.endswith(BRIGHTNESS_TOPIC_SUFFIX):
@@ -222,6 +272,7 @@ async def handle_main_events(
 ):
     handlers = {
         "KasaStateEvent": handle_main_event_kasa,
+        "KasaAvailabilityEvent": handle_availability_event_kasa,
         "KasaBrightnessEvent": handle_brightness_event_kasa,
         "KasaEmeterEvent": handle_emeter_event_kasa,
         "MqttMsgEvent": handle_main_event_mqtt,

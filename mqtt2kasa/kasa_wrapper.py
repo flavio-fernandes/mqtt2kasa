@@ -245,17 +245,28 @@ class Kasa:
 
 
 async def handle_kasa_poller(kasa: Kasa, main_events_q: asyncio.Queue):
-    fails = 0
+    state_fails = 0
+    brightness_fails = 0
     while True:
         # chatty
         # logger.debug(f"Polling {kasa.name} now. Interval is {kasa.poll_interval} seconds")
         new_state = await kasa.is_on
-        if kasa.curr_state != new_state or fails:
-            if new_state is None:
-                fails += 1
-                logger.error(f"Polling {kasa.name} ({kasa.host}) failed {fails} times")
-            else:
-                fails = 0
+        if new_state is None:
+            state_fails += 1
+            logger.error(
+                f"Polling {kasa.name} ({kasa.host}) failed {state_fails} times"
+            )
+        else:
+            if state_fails:
+                logger.info(
+                    f"Polling {kasa.name} ({kasa.host}) recovered after"
+                    f" {state_fails} failed attempts"
+                )
+                state_fails = 0
+            # Recovering from a failed poll is not a state change. Publishing it
+            # as one makes every subscriber see a duplicate transition, and on a
+            # topic published with retain it also rewrites the retained value.
+            if kasa.curr_state != new_state:
                 await main_events_q.put(
                     KasaStateEvent(
                         name=kasa.name, state=new_state, old_state=kasa.curr_state
@@ -266,14 +277,20 @@ async def handle_kasa_poller(kasa: Kasa, main_events_q: asyncio.Queue):
         is_dimmable = await kasa.is_dimmable
         if is_dimmable:
             new_brightness = await kasa.brightness
-            if kasa.curr_brightness != new_brightness or fails:
-                if new_brightness is None:
-                    fails += 1
-                    logger.error(
-                        f"Polling {kasa.name} ({kasa.host}) failed {fails} times"
+            if new_brightness is None:
+                brightness_fails += 1
+                logger.error(
+                    f"Polling {kasa.name} ({kasa.host}) brightness failed"
+                    f" {brightness_fails} times"
+                )
+            else:
+                if brightness_fails:
+                    logger.info(
+                        f"Polling {kasa.name} ({kasa.host}) brightness recovered"
+                        f" after {brightness_fails} failed attempts"
                     )
-                else:
-                    fails = 0
+                    brightness_fails = 0
+                if kasa.curr_brightness != new_brightness:
                     await main_events_q.put(
                         KasaBrightnessEvent(name=kasa.name, brightness=new_brightness)
                     )

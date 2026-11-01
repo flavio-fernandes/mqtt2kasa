@@ -15,6 +15,13 @@ mqtt:
     password: <optional mqtt password>
     # retain: false
     # qos: 0
+    # A message delivered with the retain flag set is a stored snapshot the
+    # broker hands over on subscribe, not somebody making a request. When
+    # retain is true that snapshot is our own last published state, so acting
+    # on it after a reconnect would drive the device to a value that may have
+    # gone stale. It is therefore ignored by default whenever retain is true.
+    # Set this explicitly to override either way.
+    # ignore_retained: true
 globals:
     # every location will be managed using a unique mqtt topic
     # unless explicitly specified, this format will be used

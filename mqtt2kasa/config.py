@@ -55,6 +55,19 @@ class Cfg:
         return False
 
     @property
+    def mqtt_ignore_retained(self):
+        attr = self._get_info().mqtt
+        if isinstance(attr, collections.abc.Mapping):
+            # A retained message is only delivered with the retain flag set when
+            # it arrives because of a new subscription: it is a stored snapshot,
+            # not somebody asking for something. When we publish our own state
+            # with retain, that snapshot is our own last state being handed back
+            # to us, and acting on it drives the device to a possibly stale
+            # value. Default to ignoring it whenever we publish retained.
+            return attr.get("ignore_retained", attr.get("retain", False))
+        return False
+
+    @property
     def mqtt_qos(self):
         attr = self._get_info().mqtt
         if isinstance(attr, collections.abc.Mapping):

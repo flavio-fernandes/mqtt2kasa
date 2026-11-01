@@ -61,9 +61,13 @@ async def handle_main_event_kasa(
         )
         return
     payload = kasa.state_name(kasa_state.state)
+    # old_state is None only on the first successful poll after a (re)start, so
+    # this is us announcing what we found, not the device having just changed.
+    first_announcement = getattr(kasa_state, "old_state", None) is None
     logger.info(
         f"Kasa event requesting mqtt for {kasa_state.name} to publish"
         f" {kasa.topic} as {payload}"
+        f"{' (initial state announcement)' if first_announcement else ''}"
     )
     await mqtt_send_q.put(MqttMsgEvent(topic=kasa.topic, payload=payload))
 

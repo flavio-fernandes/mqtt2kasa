@@ -32,8 +32,18 @@ async def handle_mqtt_publish(client, mqtt_send_q: asyncio.Queue):
 
 
 async def handle_mqtt_messages(messages, main_events_q: asyncio.Queue):
+    ignore_retained = Cfg().mqtt_ignore_retained
+    logger.info(
+        f"handle_mqtt_messages task started. Using ignore_retained:{ignore_retained}"
+    )
     async for message in messages:
         msg_topic = str(message.topic)
+        if ignore_retained and message.retain:
+            logger.info(
+                f"Ignoring retained mqtt topic:{msg_topic}. It is a stored"
+                " snapshot delivered on subscribe, not a request"
+            )
+            continue
         msg_payload = message.payload.decode()
         logger.debug(f"Received mqtt topic:{msg_topic} payload:{msg_payload}")
         await main_events_q.put(MqttMsgEvent(topic=msg_topic, payload=msg_payload))

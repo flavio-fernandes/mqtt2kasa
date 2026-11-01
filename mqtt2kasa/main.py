@@ -75,9 +75,7 @@ async def publish_status_event(
     status_payload = create_status_payload(kasa, name, state)
     if log_prefix:
         logger.info(f"{log_prefix} {status_topic} as {status_payload}")
-    await mqtt_send_q.put(
-        MqttMsgEvent(topic=status_topic, payload=status_payload)
-    )
+    await mqtt_send_q.put(MqttMsgEvent(topic=status_topic, payload=status_payload))
 
 
 async def handle_main_event_kasa(
@@ -101,9 +99,7 @@ async def handle_main_event_kasa(
     await mqtt_send_q.put(MqttMsgEvent(topic=kasa.topic, payload=payload))
 
     # https://github.com/flavio-fernandes/mqtt2kasa/issues/14
-    await publish_status_event(
-        kasa, kasa_state.name, kasa_state.state, mqtt_send_q
-    )
+    await publish_status_event(kasa, kasa_state.name, kasa_state.state, mqtt_send_q)
 
 
 async def handle_availability_event_kasa(

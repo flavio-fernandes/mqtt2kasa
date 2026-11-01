@@ -24,12 +24,23 @@ class _StopPolling(Exception):
 class FakeKasa:
     """Just enough of Kasa for the poller: scripted is_on/brightness results."""
 
-    def __init__(self, states, brightnesses=None, dimmable=False):
+    def __init__(
+        self,
+        states,
+        brightnesses=None,
+        dimmable=False,
+        online=True,
+        offline_after_failures=99,
+    ):
         self.name = "fake"
         self.host = "192.0.2.1"
         self.poll_interval = 0
         self.curr_state = None
         self.curr_brightness = None
+        # Availability starts settled and the offline threshold is out of reach,
+        # so these tests see state events only. Availability has its own tests.
+        self.online = online
+        self.offline_after_failures = offline_after_failures
         self._states = list(states)
         self._brightnesses = list(brightnesses or [])
         self._dimmable = dimmable
@@ -127,3 +138,21 @@ def test_brightness_is_not_polled_on_a_plain_switch():
     kasa = FakeKasa([False, True], brightnesses=[], dimmable=False)
     events = _run_poller(kasa)
     assert [e.event for e in events] == ["KasaStateEvent", "KasaStateEvent"]
+
+
+def test_recovery_publishes_availability_but_not_a_duplicate_state():
+    """A device that failed and returned is announced on availability only.
+
+    The availability topic is how a returning device gets reported. Emitting the
+    unchanged state alongside it would hand every subscriber the phantom
+    transition that the state guard exists to prevent.
+    """
+    kasa = FakeKasa([True, None, True], online=None, offline_after_failures=1)
+
+    events = _run_poller(kasa)
+
+    kinds = [event.event for event in events]
+    assert kinds.count("KasaStateEvent") == 1, "only the genuine first poll"
+    assert [
+        event.online for event in events if event.event == "KasaAvailabilityEvent"
+    ] == [True, False, True]
